@@ -66,8 +66,8 @@
                     <!-- 重命名包名解决冲突 -->
                     <relocations>
                         <relocation>
-                            <pattern>io</pattern>
-                            <shadedPattern>relocation.io</shadedPattern>
+                            <pattern>io.netty</pattern>
+                            <shadedPattern>relocation.io.netty</shadedPattern>
                         </relocation>
                         <relocation>
                             <pattern>org</pattern>
