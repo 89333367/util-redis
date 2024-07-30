@@ -25,7 +25,49 @@ import java.util.Map;
  */
 public enum RedisUtil implements Serializable, Closeable {
     INSTANCE;
+
     private Log log = LogFactory.get();
+
+    /**
+     * 获取工具类工厂
+     *
+     * @return
+     */
+    public static RedisUtil builder() {
+        return INSTANCE;
+    }
+
+    /**
+     * 构建工具类
+     *
+     * @return
+     */
+    public RedisUtil build() {
+        return INSTANCE;
+    }
+
+    /**
+     * 回收资源
+     */
+    @Override
+    public void close() {
+        redisConnectionMap.forEach((uri, redisConnection) -> {
+            log.debug("关闭链接 {}", uri);
+            redisConnection.close();
+        });
+        redisClientMap.forEach((uri, redisClient) -> {
+            log.debug("关闭客户端", uri);
+            redisClient.shutdown();
+        });
+        redisClusterConnectionMap.forEach((uri, redisClusterConnection) -> {
+            log.debug("关闭链接 {}", uri);
+            redisClusterConnection.close();
+        });
+        redisClusterClientMap.forEach((uri, redisClusterClient) -> {
+            log.debug("关闭客户端", uri);
+            redisClusterClient.shutdown();
+        });
+    }
 
     private Map<String, RedisClient> redisClientMap = new HashMap<>();
     private Map<String, RedisClusterClient> redisClusterClientMap = new HashMap<>();
@@ -100,47 +142,5 @@ public enum RedisUtil implements Serializable, Closeable {
         redisClusterConnectionMap.put(urisString, conn);
         RedisAdvancedClusterCommands<String, String> commands = conn.sync();
         return commands;
-    }
-
-
-    /**
-     * 获取工具类实例
-     *
-     * @return
-     */
-    public static RedisUtil builder() {
-        return INSTANCE;
-    }
-
-    /**
-     * 构建工具类
-     *
-     * @return
-     */
-    public RedisUtil build() {
-        return INSTANCE;
-    }
-
-    /**
-     * 回收资源
-     */
-    @Override
-    public void close() {
-        redisConnectionMap.forEach((uri, redisConnection) -> {
-            log.debug("关闭链接 {}", uri);
-            redisConnection.close();
-        });
-        redisClientMap.forEach((uri, redisClient) -> {
-            log.debug("关闭客户端", uri);
-            redisClient.shutdown();
-        });
-        redisClusterConnectionMap.forEach((uri, redisClusterConnection) -> {
-            log.debug("关闭链接 {}", uri);
-            redisClusterConnection.close();
-        });
-        redisClusterClientMap.forEach((uri, redisClusterClient) -> {
-            log.debug("关闭客户端", uri);
-            redisClusterClient.shutdown();
-        });
     }
 }
