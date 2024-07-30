@@ -74,7 +74,7 @@ public class TestRedisUtil {
 
     @Test
     void t004() {
-        RedisUtil redisUtil = RedisUtil.INSTANCE.build();//全局只需要一个
+        RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
         RedisCommands<String, String> standalone = redisUtil.standalone("redis://192.168.11.39:16379/0");//全局只需要一个
 
         log.debug(standalone.get("subsidy:bc:userinfo"));
@@ -84,7 +84,7 @@ public class TestRedisUtil {
 
     @Test
     void t005() {
-        RedisUtil redisUtil = RedisUtil.INSTANCE.build();//全局只需要一个
+        RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
         RedisAdvancedClusterCommands<String, String> cluster = redisUtil.cluster(
                 Arrays.asList("redis://192.168.11.124:7001", "redis://192.168.11.124:7002", "redis://192.168.11.124:7003",
                         "redis://192.168.11.125:7004", "redis://192.168.11.125:7005", "redis://192.168.11.125:7006"));//全局只需要一个

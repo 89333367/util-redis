@@ -104,6 +104,15 @@ public enum RedisUtil implements Serializable, Closeable {
 
 
     /**
+     * 获取工具类实例
+     *
+     * @return
+     */
+    public static RedisUtil builder() {
+        return INSTANCE;
+    }
+
+    /**
      * 构建工具类
      *
      * @return
