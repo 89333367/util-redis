@@ -26,9 +26,9 @@
 @Test
 void t004() {
     RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
-    RedisCommands<String, String> standalone = redisUtil.standalone("redis://192.168.11.39:16379/0");//全局只需要一个
+    StatefulRedisConnection<String, String> standalone = redisUtil.standalone("redis://192.168.11.39:16379/0");//全局只需要一个
 
-    log.debug(standalone.get("subsidy:bc:userinfo"));
+    log.debug(standalone.sync().get("subsidy:bc:userinfo"));
 
     redisUtil.close();//如果程序不再使用了，可以调用这个
 }
@@ -36,12 +36,62 @@ void t004() {
 @Test
 void t005() {
     RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
-    RedisAdvancedClusterCommands<String, String> cluster = redisUtil.cluster(
+    StatefulRedisClusterConnection<String, String> cluster = redisUtil.cluster(
             Arrays.asList("redis://192.168.11.124:7001", "redis://192.168.11.124:7002", "redis://192.168.11.124:7003",
                     "redis://192.168.11.125:7004", "redis://192.168.11.125:7005", "redis://192.168.11.125:7006"));//全局只需要一个
 
-    for (KeyValue<String, String> kv : cluster.mget("relation:16200442", "farm:realtime:0865306056453850")) {
-        log.debug("{} {}", kv.getKey(), kv.getValue());
+    for (KeyValue<String, String> kv : cluster.sync().mget("relation:16200442", "farm:realtime:0865306056453850")) {
+        if (kv.isEmpty()) {
+            log.debug("{}", kv);
+        } else {
+            log.debug("{} {}", kv.getKey(), kv.getValue());
+        }
+    }
+
+    redisUtil.close();//如果程序不再使用了，可以调用这个
+}
+
+
+@Test
+void t007() {
+    RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
+    StatefulRedisConnection<String, String> standalone = redisUtil.standalone("redis://192.168.11.39:16379/0");//全局只需要一个
+
+    //异步调用
+    RedisFuture<String> stringRedisFuture = standalone.async().get("subsidy:bc:userinfo");
+    try {
+        String v = stringRedisFuture.get();//等待异步方法返回
+        log.info("{}", v);
+    } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+    } catch (ExecutionException e) {
+        throw new RuntimeException(e);
+    }
+
+    redisUtil.close();//如果程序不再使用了，可以调用这个
+}
+
+@Test
+void t008() {
+    RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
+    StatefulRedisClusterConnection<String, String> cluster = redisUtil.cluster(
+            Arrays.asList("redis://192.168.11.124:7001", "redis://192.168.11.124:7002", "redis://192.168.11.124:7003",
+                    "redis://192.168.11.125:7004", "redis://192.168.11.125:7005", "redis://192.168.11.125:7006"));//全局只需要一个
+
+    //异步调用
+    RedisFuture<List<KeyValue<String, String>>> mget = cluster.async().mget("relation:16200442", "farm:realtime:0865306056453850");
+    try {
+        for (KeyValue<String, String> kv : mget.get()) {
+            if (kv.isEmpty()) {
+                log.debug("{}", kv);
+            } else {
+                log.debug("{} {}", kv.getKey(), kv.getValue());
+            }
+        }
+    } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+    } catch (ExecutionException e) {
+        throw new RuntimeException(e);
     }
 
     redisUtil.close();//如果程序不再使用了，可以调用这个
