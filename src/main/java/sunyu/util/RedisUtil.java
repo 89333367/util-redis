@@ -23,10 +23,100 @@ import java.util.Map;
  *
  * @author 孙宇
  */
-public enum RedisUtil implements Serializable, Closeable {
-    INSTANCE;
-
+public class RedisUtil implements Serializable, Closeable {
     private Log log = LogFactory.get();
+    private static final RedisUtil INSTANCE = new RedisUtil();
+
+
+    private Map<String, RedisClient> redisClientMap = new HashMap<>();
+    private Map<String, RedisClusterClient> redisClusterClientMap = new HashMap<>();
+    private Map<String, StatefulRedisConnection<String, String>> redisConnectionMap = new HashMap<>();
+    private Map<String, StatefulRedisClusterConnection<String, String>> redisClusterConnectionMap = new HashMap<>();
+    private RedisCommands<String, String> commands;
+    private RedisAdvancedClusterCommands<String, String> clusterCommands;
+
+
+    /**
+     * 获取standalone命令对象
+     * <pre>
+     * redis://localhost:16379/0
+     * redis://[password@]host[:port][/databaseNumber]
+     * redis://[username:password@]host[:port][/databaseNumber]
+     * rediss://[[username:]password@]host[:port][/database][?[timeout=timeout[d|h|m|s|ms|us|ns]][&clientName=clientName][&libraryName=libraryName][&libraryVersion=libraryVersion]]
+     * redis-socket://[[username:]password@]path[?[timeout=timeout[d|h|m|s|ms|us|ns]][&database=database][&clientName=clientName][&libraryName=libraryName][&libraryVersion=libraryVersion]]
+     * </pre>
+     *
+     * @param uri
+     * @return
+     */
+    public RedisCommands<String, String> standalone(String uri) {
+        if (!redisClientMap.containsKey(uri)) {
+            RedisClient client = RedisClient.create(uri);
+            StatefulRedisConnection<String, String> conn = client.connect();
+            log.debug("已连接到redis standalone {}", uri);
+            redisClientMap.put(uri, client);
+            redisConnectionMap.put(uri, conn);
+            commands = conn.sync();
+        }
+        return commands;
+    }
+
+
+    /**
+     * 获取sentinel命令对象
+     * <pre>
+     * redis-sentinel://localhost:26379,localhost:26380/0#mymaster
+     * redis-sentinel://[password@]host[:port][,host2[:port2]][/databaseNumber]#sentinelMasterId
+     * </pre>
+     *
+     * @param uri
+     * @return
+     */
+    public RedisCommands<String, String> sentinel(String uri) {
+        if (!redisClientMap.containsKey(uri)) {
+            RedisClient client = RedisClient.create(uri);
+            StatefulRedisConnection<String, String> conn = client.connect();
+            log.debug("已连接到redis sentinel {}", uri);
+            redisClientMap.put(uri, client);
+            redisConnectionMap.put(uri, conn);
+            commands = conn.sync();
+        }
+        return commands;
+    }
+
+    /**
+     * 获取cluster命令对象
+     * <pre>
+     * redis://[password@]host[:port]
+     * redis://[username:password@]host[:port]
+     * </pre>
+     *
+     * @param uris
+     * @return
+     */
+    public RedisAdvancedClusterCommands<String, String> cluster(List<String> uris) {
+        String urisStr = JSONUtil.toJsonStr(uris);
+        if (!redisClusterClientMap.containsKey(urisStr)) {
+            List<RedisURI> uriList = new ArrayList();
+            for (String uri : uris) {
+                uriList.add(RedisURI.create(uri));
+            }
+            RedisClusterClient client = RedisClusterClient.create(uriList);
+            StatefulRedisClusterConnection<String, String> conn = client.connect();
+            log.debug("已连接到redis cluster {}", urisStr);
+            redisClusterClientMap.put(urisStr, client);
+            redisClusterConnectionMap.put(urisStr, conn);
+            clusterCommands = conn.sync();
+        }
+        return clusterCommands;
+    }
+
+
+    /**
+     * 私有构造函数，防止外部实例化
+     */
+    private RedisUtil() {
+    }
 
     /**
      * 获取工具类工厂
@@ -69,78 +159,5 @@ public enum RedisUtil implements Serializable, Closeable {
         });
     }
 
-    private Map<String, RedisClient> redisClientMap = new HashMap<>();
-    private Map<String, RedisClusterClient> redisClusterClientMap = new HashMap<>();
-    private Map<String, StatefulRedisConnection<String, String>> redisConnectionMap = new HashMap<>();
-    private Map<String, StatefulRedisClusterConnection<String, String>> redisClusterConnectionMap = new HashMap<>();
 
-
-    /**
-     * 获取standalone命令对象
-     * <pre>
-     * redis://localhost:16379/0
-     * redis://[password@]host[:port][/databaseNumber]
-     * redis://[username:password@]host[:port][/databaseNumber]
-     * rediss://[[username:]password@]host[:port][/database][?[timeout=timeout[d|h|m|s|ms|us|ns]][&clientName=clientName][&libraryName=libraryName][&libraryVersion=libraryVersion]]
-     * redis-socket://[[username:]password@]path[?[timeout=timeout[d|h|m|s|ms|us|ns]][&database=database][&clientName=clientName][&libraryName=libraryName][&libraryVersion=libraryVersion]]
-     * </pre>
-     *
-     * @param uri
-     * @return
-     */
-    public RedisCommands<String, String> standalone(String uri) {
-        RedisClient client = RedisClient.create(uri);
-        StatefulRedisConnection<String, String> conn = client.connect();
-        log.debug("已连接到redis standalone {}", uri);
-        redisClientMap.put(uri, client);
-        redisConnectionMap.put(uri, conn);
-        RedisCommands<String, String> commands = conn.sync();
-        return commands;
-    }
-
-
-    /**
-     * 获取sentinel命令对象
-     * <pre>
-     * redis-sentinel://localhost:26379,localhost:26380/0#mymaster
-     * redis-sentinel://[password@]host[:port][,host2[:port2]][/databaseNumber]#sentinelMasterId
-     * </pre>
-     *
-     * @param uri
-     * @return
-     */
-    public RedisCommands<String, String> sentinel(String uri) {
-        RedisClient client = RedisClient.create(uri);
-        StatefulRedisConnection<String, String> conn = client.connect();
-        log.debug("已连接到redis sentinel {}", uri);
-        redisClientMap.put(uri, client);
-        redisConnectionMap.put(uri, conn);
-        RedisCommands<String, String> commands = conn.sync();
-        return commands;
-    }
-
-    /**
-     * 获取cluster命令对象
-     * <pre>
-     * redis://[password@]host[:port]
-     * redis://[username:password@]host[:port]
-     * </pre>
-     *
-     * @param uris
-     * @return
-     */
-    public RedisAdvancedClusterCommands<String, String> cluster(List<String> uris) {
-        List<RedisURI> uriList = new ArrayList();
-        for (String uri : uris) {
-            uriList.add(RedisURI.create(uri));
-        }
-        RedisClusterClient client = RedisClusterClient.create(uriList);
-        StatefulRedisClusterConnection<String, String> conn = client.connect();
-        String urisString = JSONUtil.toJsonStr(uris);
-        log.debug("已连接到redis cluster {}", urisString);
-        redisClusterClientMap.put(urisString, client);
-        redisClusterConnectionMap.put(urisString, conn);
-        RedisAdvancedClusterCommands<String, String> commands = conn.sync();
-        return commands;
-    }
 }
