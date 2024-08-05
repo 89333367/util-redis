@@ -26,10 +26,10 @@ public class RedisUtil implements Serializable, Closeable {
     private static final RedisUtil INSTANCE = new RedisUtil();
 
 
-    private Map<String, RedisClient> redisClientMap = new HashMap<>();
-    private Map<String, RedisClusterClient> redisClusterClientMap = new HashMap<>();
-    private Map<String, StatefulRedisConnection<String, String>> redisConnectionMap = new HashMap<>();
-    private Map<String, StatefulRedisClusterConnection<String, String>> redisClusterConnectionMap = new HashMap<>();
+    private Map<String, RedisClient> clientMap = new HashMap<>();
+    private Map<String, RedisClusterClient> clusterClientMap = new HashMap<>();
+    private Map<String, StatefulRedisConnection<String, String>> connectionMap = new HashMap<>();
+    private Map<String, StatefulRedisClusterConnection<String, String>> clusterConnectionMap = new HashMap<>();
 
 
     /**
@@ -47,17 +47,17 @@ public class RedisUtil implements Serializable, Closeable {
      */
     public StatefulRedisConnection<String, String> standalone(String uri) {
         log.info("构建链接开始 {}", uri);
-        if (!redisConnectionMap.containsKey(uri)) {
+        if (!connectionMap.containsKey(uri)) {
             RedisClient client = RedisClient.create(uri);
             StatefulRedisConnection<String, String> conn = client.connect();
             log.info("已连接到redis standalone {}", uri);
-            redisClientMap.put(uri, client);
-            redisConnectionMap.put(uri, conn);
+            clientMap.put(uri, client);
+            connectionMap.put(uri, conn);
             log.info("构建链接成功 {}", uri);
         } else {
             log.warn("链接已构建，请不要重复构建 {}", uri);
         }
-        return redisConnectionMap.get(uri);
+        return connectionMap.get(uri);
     }
 
 
@@ -73,17 +73,17 @@ public class RedisUtil implements Serializable, Closeable {
      */
     public StatefulRedisConnection<String, String> sentinel(String uri) {
         log.info("构建链接开始 {}", uri);
-        if (!redisConnectionMap.containsKey(uri)) {
+        if (!connectionMap.containsKey(uri)) {
             RedisClient client = RedisClient.create(uri);
             StatefulRedisConnection<String, String> conn = client.connect();
             log.info("已连接到redis sentinel {}", uri);
-            redisClientMap.put(uri, client);
-            redisConnectionMap.put(uri, conn);
+            clientMap.put(uri, client);
+            connectionMap.put(uri, conn);
             log.info("构建链接成功 {}", uri);
         } else {
             log.warn("链接已构建，请不要重复构建 {}", uri);
         }
-        return redisConnectionMap.get(uri);
+        return connectionMap.get(uri);
     }
 
     /**
@@ -99,7 +99,7 @@ public class RedisUtil implements Serializable, Closeable {
     public StatefulRedisClusterConnection<String, String> cluster(List<String> uris) {
         String urisStr = JSONUtil.toJsonStr(uris);
         log.info("构建链接开始 {}", urisStr);
-        if (!redisClusterConnectionMap.containsKey(urisStr)) {
+        if (!clusterConnectionMap.containsKey(urisStr)) {
             List<RedisURI> uriList = new ArrayList();
             for (String uri : uris) {
                 uriList.add(RedisURI.create(uri));
@@ -107,13 +107,13 @@ public class RedisUtil implements Serializable, Closeable {
             RedisClusterClient client = RedisClusterClient.create(uriList);
             StatefulRedisClusterConnection<String, String> conn = client.connect();
             log.info("已连接到redis cluster {}", urisStr);
-            redisClusterClientMap.put(urisStr, client);
-            redisClusterConnectionMap.put(urisStr, conn);
+            clusterClientMap.put(urisStr, client);
+            clusterConnectionMap.put(urisStr, conn);
             log.info("构建链接成功 {}", urisStr);
         } else {
             log.warn("链接已构建，请不要重复构建 {}", urisStr);
         }
-        return redisClusterConnectionMap.get(urisStr);
+        return clusterConnectionMap.get(urisStr);
     }
 
 
@@ -147,7 +147,7 @@ public class RedisUtil implements Serializable, Closeable {
     @Override
     public void close() {
         log.info("销毁redis工具开始");
-        redisConnectionMap.forEach((uri, redisConnection) -> {
+        connectionMap.forEach((uri, redisConnection) -> {
             try {
                 log.info("关闭链接开始 {}", uri);
                 redisConnection.close();
@@ -156,7 +156,7 @@ public class RedisUtil implements Serializable, Closeable {
                 log.warn("关闭链接失败 {} {}", uri, e.getMessage());
             }
         });
-        redisClientMap.forEach((uri, redisClient) -> {
+        clientMap.forEach((uri, redisClient) -> {
             try {
                 log.info("关闭客户端开始 {}", uri);
                 redisClient.shutdown();
@@ -165,7 +165,7 @@ public class RedisUtil implements Serializable, Closeable {
                 log.warn("关闭客户端失败 {} {}", uri, e.getMessage());
             }
         });
-        redisClusterConnectionMap.forEach((uris, redisClusterConnection) -> {
+        clusterConnectionMap.forEach((uris, redisClusterConnection) -> {
             try {
                 log.info("关闭链接开始 {}", uris);
                 redisClusterConnection.close();
@@ -174,7 +174,7 @@ public class RedisUtil implements Serializable, Closeable {
                 log.warn("关闭链接失败 {} {}", uris, e.getMessage());
             }
         });
-        redisClusterClientMap.forEach((uris, redisClusterClient) -> {
+        clusterClientMap.forEach((uris, redisClusterClient) -> {
             try {
                 log.info("关闭客户端开始 {}", uris);
                 redisClusterClient.shutdown();
@@ -183,10 +183,10 @@ public class RedisUtil implements Serializable, Closeable {
                 log.warn("关闭客户端失败 {} {}", uris, e.getMessage());
             }
         });
-        redisClientMap.clear();
-        redisClusterClientMap.clear();
-        redisConnectionMap.clear();
-        redisClusterConnectionMap.clear();
+        clientMap.clear();
+        clusterClientMap.clear();
+        connectionMap.clear();
+        clusterConnectionMap.clear();
         log.info("销毁redis工具完毕");
     }
 
