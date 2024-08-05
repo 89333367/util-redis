@@ -46,12 +46,16 @@ public class RedisUtil implements Serializable, Closeable {
      * @return
      */
     public StatefulRedisConnection<String, String> standalone(String uri) {
+        log.info("构建链接开始 {}", uri);
         if (!redisConnectionMap.containsKey(uri)) {
             RedisClient client = RedisClient.create(uri);
             StatefulRedisConnection<String, String> conn = client.connect();
-            log.debug("已连接到redis standalone {}", uri);
+            log.info("已连接到redis standalone {}", uri);
             redisClientMap.put(uri, client);
             redisConnectionMap.put(uri, conn);
+            log.info("构建链接成功 {}", uri);
+        } else {
+            log.warn("链接已构建，请不要重复构建 {}", uri);
         }
         return redisConnectionMap.get(uri);
     }
@@ -68,12 +72,16 @@ public class RedisUtil implements Serializable, Closeable {
      * @return
      */
     public StatefulRedisConnection<String, String> sentinel(String uri) {
+        log.info("构建链接开始 {}", uri);
         if (!redisConnectionMap.containsKey(uri)) {
             RedisClient client = RedisClient.create(uri);
             StatefulRedisConnection<String, String> conn = client.connect();
-            log.debug("已连接到redis sentinel {}", uri);
+            log.info("已连接到redis sentinel {}", uri);
             redisClientMap.put(uri, client);
             redisConnectionMap.put(uri, conn);
+            log.info("构建链接成功 {}", uri);
+        } else {
+            log.warn("链接已构建，请不要重复构建 {}", uri);
         }
         return redisConnectionMap.get(uri);
     }
@@ -90,6 +98,7 @@ public class RedisUtil implements Serializable, Closeable {
      */
     public StatefulRedisClusterConnection<String, String> cluster(List<String> uris) {
         String urisStr = JSONUtil.toJsonStr(uris);
+        log.info("构建链接开始 {}", urisStr);
         if (!redisClusterConnectionMap.containsKey(urisStr)) {
             List<RedisURI> uriList = new ArrayList();
             for (String uri : uris) {
@@ -97,9 +106,12 @@ public class RedisUtil implements Serializable, Closeable {
             }
             RedisClusterClient client = RedisClusterClient.create(uriList);
             StatefulRedisClusterConnection<String, String> conn = client.connect();
-            log.debug("已连接到redis cluster {}", urisStr);
+            log.info("已连接到redis cluster {}", urisStr);
             redisClusterClientMap.put(urisStr, client);
             redisClusterConnectionMap.put(urisStr, conn);
+            log.info("构建链接成功 {}", urisStr);
+        } else {
+            log.warn("链接已构建，请不要重复构建 {}", urisStr);
         }
         return redisClusterConnectionMap.get(urisStr);
     }
@@ -134,42 +146,48 @@ public class RedisUtil implements Serializable, Closeable {
      */
     @Override
     public void close() {
+        log.info("销毁redis工具开始");
         redisConnectionMap.forEach((uri, redisConnection) -> {
             try {
-                log.debug("关闭链接 {}", uri);
+                log.info("关闭链接开始 {}", uri);
                 redisConnection.close();
+                log.info("关闭链接成功 {}", uri);
             } catch (Exception e) {
-                log.error(e);
+                log.warn("关闭链接失败 {} {}", uri, e.getMessage());
             }
         });
         redisClientMap.forEach((uri, redisClient) -> {
             try {
-                log.debug("关闭客户端", uri);
+                log.info("关闭客户端开始 {}", uri);
                 redisClient.shutdown();
+                log.info("关闭客户端成功 {}", uri);
             } catch (Exception e) {
-                log.error(e);
+                log.warn("关闭客户端失败 {} {}", uri, e.getMessage());
             }
         });
-        redisClusterConnectionMap.forEach((uri, redisClusterConnection) -> {
+        redisClusterConnectionMap.forEach((uris, redisClusterConnection) -> {
             try {
-                log.debug("关闭链接 {}", uri);
+                log.info("关闭链接开始 {}", uris);
                 redisClusterConnection.close();
+                log.info("关闭链接成功 {}", uris);
             } catch (Exception e) {
-                log.error(e);
+                log.warn("关闭链接失败 {} {}", uris, e.getMessage());
             }
         });
-        redisClusterClientMap.forEach((uri, redisClusterClient) -> {
+        redisClusterClientMap.forEach((uris, redisClusterClient) -> {
             try {
-                log.debug("关闭客户端", uri);
+                log.info("关闭客户端开始 {}", uris);
                 redisClusterClient.shutdown();
+                log.info("关闭客户端成功 {}", uris);
             } catch (Exception e) {
-                log.error(e);
+                log.warn("关闭客户端失败 {} {}", uris, e.getMessage());
             }
         });
         redisClientMap.clear();
         redisClusterClientMap.clear();
         redisConnectionMap.clear();
         redisClusterConnectionMap.clear();
+        log.info("销毁redis工具完毕");
     }
 
 
