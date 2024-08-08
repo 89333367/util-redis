@@ -3,11 +3,17 @@ package sunyu.util;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
+import io.lettuce.core.ReadFrom;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.api.StatefulRedisConnection;
+import io.lettuce.core.cluster.ClusterClientOptions;
+import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
 import io.lettuce.core.cluster.RedisClusterClient;
 import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
+import io.lettuce.core.codec.StringCodec;
+import io.lettuce.core.masterreplica.MasterReplica;
+import io.lettuce.core.masterreplica.StatefulRedisMasterReplicaConnection;
 
 import java.io.Closeable;
 import java.io.Serializable;
@@ -26,10 +32,11 @@ public class RedisUtil implements Serializable, Closeable {
     private static final RedisUtil INSTANCE = new RedisUtil();
 
 
-    private Map<String, RedisClient> clientMap = new HashMap<>();
-    private Map<String, RedisClusterClient> clusterClientMap = new HashMap<>();
-    private Map<String, StatefulRedisConnection<String, String>> connectionMap = new HashMap<>();
-    private Map<String, StatefulRedisClusterConnection<String, String>> clusterConnectionMap = new HashMap<>();
+    private volatile Map<String, RedisClient> clientMap = new HashMap<>();
+    private volatile Map<String, RedisClusterClient> clusterClientMap = new HashMap<>();
+    private volatile Map<String, StatefulRedisConnection<String, String>> standaloneConnectionMap = new HashMap<>();
+    private volatile Map<String, StatefulRedisMasterReplicaConnection<String, String>> sentinelConnectionMap = new HashMap<>();
+    private volatile Map<String, StatefulRedisClusterConnection<String, String>> clusterConnectionMap = new HashMap<>();
 
 
     /**
@@ -47,18 +54,18 @@ public class RedisUtil implements Serializable, Closeable {
      */
     public StatefulRedisConnection<String, String> standalone(String uri) {
         log.info("构建链接开始 {}", uri);
-        if (connectionMap.containsKey(uri)) {
+        if (standaloneConnectionMap.containsKey(uri)) {
             log.warn("链接已构建，请不要重复构建 {}", uri);
-            return connectionMap.get(uri);
+            return standaloneConnectionMap.get(uri);
         }
 
         RedisClient client = RedisClient.create(uri);
         StatefulRedisConnection<String, String> conn = client.connect();
         log.info("已连接到redis standalone {}", uri);
         clientMap.put(uri, client);
-        connectionMap.put(uri, conn);
+        standaloneConnectionMap.put(uri, conn);
         log.info("构建链接成功 {}", uri);
-        return connectionMap.get(uri);
+        return standaloneConnectionMap.get(uri);
     }
 
 
@@ -72,20 +79,28 @@ public class RedisUtil implements Serializable, Closeable {
      * @param uri
      * @return
      */
-    public StatefulRedisConnection<String, String> sentinel(String uri) {
+    public StatefulRedisMasterReplicaConnection<String, String> sentinel(String uri) {
         log.info("构建链接开始 {}", uri);
-        if (connectionMap.containsKey(uri)) {
+        if (sentinelConnectionMap.containsKey(uri)) {
             log.warn("链接已构建，请不要重复构建 {}", uri);
-            return connectionMap.get(uri);
+            return sentinelConnectionMap.get(uri);
         }
 
-        RedisClient client = RedisClient.create(uri);
-        StatefulRedisConnection<String, String> conn = client.connect();
+
+        RedisClient client = RedisClient.create();
+
+        log.info("构建主从链接开始");
+        StatefulRedisMasterReplicaConnection<String, String> conn = MasterReplica.connect(client, StringCodec.UTF8, RedisURI.create(uri));
+        log.info("构建主从链接完毕");
+        log.info("设置读取策略开始");
+        conn.setReadFrom(ReadFrom.UPSTREAM_PREFERRED);
+        log.info("设置读取策略完毕 {}", conn.getReadFrom());
+
         log.info("已连接到redis sentinel {}", uri);
         clientMap.put(uri, client);
-        connectionMap.put(uri, conn);
+        sentinelConnectionMap.put(uri, conn);
         log.info("构建链接成功 {}", uri);
-        return connectionMap.get(uri);
+        return sentinelConnectionMap.get(uri);
     }
 
     /**
@@ -111,7 +126,28 @@ public class RedisUtil implements Serializable, Closeable {
             uriList.add(RedisURI.create(uri));
         }
         RedisClusterClient client = RedisClusterClient.create(uriList);
+
+        log.info("构建集群拓扑参数开始");
+        ClusterTopologyRefreshOptions clusterTopologyRefreshOptions = ClusterTopologyRefreshOptions.builder()
+                .enablePeriodicRefresh()//周期性更新集群拓扑视图
+                .enableAllAdaptiveRefreshTriggers()//设置自适应更新集群拓扑视图触发器
+                .build();
+        log.info("构建集群拓扑参数完毕");
+        log.info("构建集群客户端参数开始");
+        ClusterClientOptions clusterClientOptions = ClusterClientOptions.builder()
+                .topologyRefreshOptions(clusterTopologyRefreshOptions)
+                .build();
+        log.info("构建集群客户端参数完毕");
+        log.info("设置集群客户端参数开始");
+        client.setOptions(clusterClientOptions);
+        log.info("设置集群客户端参数结束");
+
         StatefulRedisClusterConnection<String, String> conn = client.connect();
+
+        log.info("设置读取策略开始");
+        conn.setReadFrom(ReadFrom.REPLICA_PREFERRED);//设置为从副本中读取首选值，如果没有可用的副本，则回退到上游。
+        log.info("设置读取策略完毕 {}", conn.getReadFrom());
+
         log.info("已连接到redis cluster {}", urisStr);
         clusterClientMap.put(urisStr, client);
         clusterConnectionMap.put(urisStr, conn);
@@ -152,46 +188,58 @@ public class RedisUtil implements Serializable, Closeable {
     @Override
     public void close() {
         log.info("销毁redis工具开始");
-        connectionMap.forEach((uri, redisConnection) -> {
+        standaloneConnectionMap.forEach((uri, conn) -> {
             try {
                 log.info("关闭链接开始 {}", uri);
-                redisConnection.close();
+                conn.close();
                 log.info("关闭链接成功 {}", uri);
             } catch (Exception e) {
                 log.warn("关闭链接失败 {} {}", uri, e.getMessage());
             }
         });
-        clientMap.forEach((uri, redisClient) -> {
-            try {
-                log.info("关闭客户端开始 {}", uri);
-                redisClient.shutdown();
-                log.info("关闭客户端成功 {}", uri);
-            } catch (Exception e) {
-                log.warn("关闭客户端失败 {} {}", uri, e.getMessage());
-            }
-        });
-        clusterConnectionMap.forEach((uris, redisClusterConnection) -> {
+        sentinelConnectionMap.forEach((uris, conn) -> {
             try {
                 log.info("关闭链接开始 {}", uris);
-                redisClusterConnection.close();
+                conn.close();
                 log.info("关闭链接成功 {}", uris);
             } catch (Exception e) {
                 log.warn("关闭链接失败 {} {}", uris, e.getMessage());
             }
         });
-        clusterClientMap.forEach((uris, redisClusterClient) -> {
+        clusterConnectionMap.forEach((uris, conn) -> {
+            try {
+                log.info("关闭链接开始 {}", uris);
+                conn.close();
+                log.info("关闭链接成功 {}", uris);
+            } catch (Exception e) {
+                log.warn("关闭链接失败 {} {}", uris, e.getMessage());
+            }
+        });
+        clientMap.forEach((uri, client) -> {
+            try {
+                log.info("关闭客户端开始 {}", uri);
+                client.shutdown();
+                log.info("关闭客户端成功 {}", uri);
+            } catch (Exception e) {
+                log.warn("关闭客户端失败 {} {}", uri, e.getMessage());
+            }
+        });
+        clusterClientMap.forEach((uris, client) -> {
             try {
                 log.info("关闭客户端开始 {}", uris);
-                redisClusterClient.shutdown();
+                client.shutdown();
                 log.info("关闭客户端成功 {}", uris);
             } catch (Exception e) {
                 log.warn("关闭客户端失败 {} {}", uris, e.getMessage());
             }
         });
+
+        standaloneConnectionMap.clear();
+        sentinelConnectionMap.clear();
+        clusterConnectionMap.clear();
         clientMap.clear();
         clusterClientMap.clear();
-        connectionMap.clear();
-        clusterConnectionMap.clear();
+
         log.info("销毁redis工具完毕");
     }
 

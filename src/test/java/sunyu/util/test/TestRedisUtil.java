@@ -166,4 +166,15 @@ public class TestRedisUtil {
 
         redisUtil.close();//如果程序不再使用了，可以调用这个
     }
+
+    @Test
+    void t009() {
+        RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
+        StatefulRedisClusterConnection<String, String> cluster = redisUtil.cluster(
+                Arrays.asList("redis://192.168.11.124:7001", "redis://192.168.11.124:7002", "redis://192.168.11.124:7003",
+                        "redis://192.168.11.125:7004", "redis://192.168.11.125:7005", "redis://192.168.11.125:7006"));//全局只需要一个
+
+
+        redisUtil.close();//如果程序不再使用了，可以调用这个
+    }
 }
