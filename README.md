@@ -15,7 +15,7 @@
 <dependency>
     <groupId>sunyu.util</groupId>
     <artifactId>util-redis</artifactId>
-    <version>lettuce-6.4.0.RELEASE_v1.0</version>
+    <version>lettuce-6.5.0.RELEASE_v1.0</version>
 </dependency>
 ```
 

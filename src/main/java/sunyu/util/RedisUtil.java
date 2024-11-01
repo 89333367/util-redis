@@ -28,16 +28,15 @@ import java.util.Map;
  * @author 孙宇
  */
 public class RedisUtil implements Serializable, Closeable {
-    private Log log = LogFactory.get();
+    private final Log log = LogFactory.get();
     private static final RedisUtil INSTANCE = new RedisUtil();
 
 
-    private volatile Map<String, RedisClient> clientMap = new HashMap<>();
-    private volatile Map<String, RedisClusterClient> clusterClientMap = new HashMap<>();
-    private volatile Map<String, StatefulRedisConnection<String, String>> standaloneConnectionMap = new HashMap<>();
-    private volatile Map<String, StatefulRedisMasterReplicaConnection<String, String>> sentinelConnectionMap = new HashMap<>();
-    private volatile Map<String, StatefulRedisClusterConnection<String, String>> clusterConnectionMap = new HashMap<>();
-
+    private final Map<String, RedisClient> clientMap = new HashMap<>();
+    private final Map<String, RedisClusterClient> clusterClientMap = new HashMap<>();
+    private final Map<String, StatefulRedisConnection<String, String>> standaloneConnectionMap = new HashMap<>();
+    private final Map<String, StatefulRedisMasterReplicaConnection<String, String>> sentinelConnectionMap = new HashMap<>();
+    private final Map<String, StatefulRedisClusterConnection<String, String>> clusterConnectionMap = new HashMap<>();
 
     /**
      * 获取standalone命令对象
@@ -121,7 +120,7 @@ public class RedisUtil implements Serializable, Closeable {
             return clusterConnectionMap.get(urisStr);
         }
 
-        List<RedisURI> uriList = new ArrayList();
+        List<RedisURI> uriList = new ArrayList<>();
         for (String uri : uris) {
             uriList.add(RedisURI.create(uri));
         }

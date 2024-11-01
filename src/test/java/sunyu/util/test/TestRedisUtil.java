@@ -1,11 +1,9 @@
 package sunyu.util.test;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
-import io.lettuce.core.KeyValue;
-import io.lettuce.core.RedisClient;
-import io.lettuce.core.RedisFuture;
-import io.lettuce.core.RedisURI;
+import io.lettuce.core.*;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
 import io.lettuce.core.cluster.RedisClusterClient;
@@ -18,12 +16,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 public class TestRedisUtil {
     Log log = LogFactory.get();
 
+    /**
+     * 单节点模式
+     */
     @Test
-    void t001() {
+    void testStandalone() {
         // Syntax: redis://[password@]host[:port][/databaseNumber]
         // Syntax: redis://[username:password@]host[:port][/databaseNumber]
         RedisClient redisClient = RedisClient.create("redis://192.168.11.39:16379/0");
@@ -31,17 +33,21 @@ public class TestRedisUtil {
         log.debug("Connected to Redis");
         RedisCommands<String, String> redisCommands = connection.sync();
 
+        // todo
         log.debug(redisCommands.get("subsidy:bc:userinfo"));
 
         connection.close();
         redisClient.shutdown();
     }
 
+    /**
+     * 集群模式
+     */
     @Test
-    void t002() {
+    void testCluster() {
         // Syntax: redis://[password@]host[:port]
         // Syntax: redis://[username:password@]host[:port]
-        List<RedisURI> uris = new ArrayList();
+        List<RedisURI> uris = new ArrayList<>();
         uris.add(RedisURI.create("redis://192.168.11.124:7001"));
         uris.add(RedisURI.create("redis://192.168.11.124:7002"));
         uris.add(RedisURI.create("redis://192.168.11.124:7003"));
@@ -53,6 +59,7 @@ public class TestRedisUtil {
         log.debug("Connected to Redis Cluster");
         RedisAdvancedClusterCommands<String, String> redisClusterCommands = connection.sync();
 
+        // todo
         for (KeyValue<String, String> kv : redisClusterCommands.mget("relation:16200442", "farm:realtime:0865306056453850")) {
             log.debug("{} {}", kv.getKey(), kv.getValue());
         }
@@ -61,21 +68,31 @@ public class TestRedisUtil {
         redisClient.shutdown();
     }
 
+    /**
+     * 哨兵模式
+     */
     @Test
-    void t003() {
+    void testSentinel() {
         // Syntax: redis-sentinel://[password@]host[:port][,host2[:port2]][/databaseNumber]#sentinelMasterId
         RedisClient redisClient = RedisClient.create("redis-sentinel://localhost:26379,localhost:26380/0#mymaster");
         StatefulRedisConnection<String, String> connection = redisClient.connect();
         log.debug("Connected to Redis using Redis Sentinel");
         RedisCommands<String, String> redisSentinelCommands = connection.sync();
 
+        // todo
+        String v = redisSentinelCommands.get("key");
+        log.info(v);
+
         connection.close();
         redisClient.shutdown();
     }
 
 
+    /**
+     * get命令
+     */
     @Test
-    void t004() {
+    void testGet() {
         RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
         StatefulRedisConnection<String, String> standalone = redisUtil.standalone("redis://192.168.11.39:16379/0");//全局只需要一个
 
@@ -86,7 +103,7 @@ public class TestRedisUtil {
     }
 
     @Test
-    void t005() {
+    void testMget() {
         RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
         StatefulRedisClusterConnection<String, String> cluster = redisUtil.cluster(
                 Arrays.asList("redis://192.168.11.124:7001", "redis://192.168.11.124:7002", "redis://192.168.11.124:7003",
@@ -102,6 +119,29 @@ public class TestRedisUtil {
         }
 
         redisUtil.close();//如果程序不再使用了，可以调用这个
+    }
+
+    @Test
+    void testKeys() {
+        String nodes = "192.168.11.124:7001,192.168.11.124:7002,192.168.11.124:7003,192.168.11.125:7004,192.168.11.125:7005,192.168.11.125:7006";
+        RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
+        StatefulRedisClusterConnection<String, String> cluster = redisUtil
+                .cluster(Arrays.stream(nodes.split(","))
+                        .map(s -> s.split(":"))
+                        .map(arr -> StrUtil.format("redis://{}:{}", arr[0], arr[1]))
+                        .collect(Collectors.toList()));
+        RedisAdvancedClusterCommands<String, String> sync = cluster.sync();
+
+        KeyScanCursor<String> scanCursor = null;
+        ScanArgs scanArgs = new ScanArgs().match("ne:realtime:*").limit(500);
+        do {
+            scanCursor = (scanCursor == null) ? sync.scan(scanArgs) : sync.scan(scanCursor, scanArgs);
+            for (String key : scanCursor.getKeys()) {
+                log.info("{}", key);
+            }
+        } while (!scanCursor.isFinished());
+
+        redisUtil.close();
     }
 
     @Test
