@@ -1,5 +1,6 @@
 package sunyu.util;
 
+import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
@@ -30,7 +31,6 @@ import java.util.Map;
 public class RedisUtil implements Serializable, Closeable {
     private final Log log = LogFactory.get();
     private static final RedisUtil INSTANCE = new RedisUtil();
-
 
     private final Map<String, RedisClient> clientMap = new HashMap<>();
     private final Map<String, RedisClusterClient> clusterClientMap = new HashMap<>();
@@ -193,7 +193,7 @@ public class RedisUtil implements Serializable, Closeable {
                 conn.close();
                 log.info("关闭链接成功 {}", uri);
             } catch (Exception e) {
-                log.warn("关闭链接失败 {} {}", uri, e.getMessage());
+                log.warn("关闭链接失败 {} {}", uri, ExceptionUtil.stacktraceToString(e));
             }
         });
         sentinelConnectionMap.forEach((uris, conn) -> {
@@ -202,7 +202,7 @@ public class RedisUtil implements Serializable, Closeable {
                 conn.close();
                 log.info("关闭链接成功 {}", uris);
             } catch (Exception e) {
-                log.warn("关闭链接失败 {} {}", uris, e.getMessage());
+                log.warn("关闭链接失败 {} {}", uris, ExceptionUtil.stacktraceToString(e));
             }
         });
         clusterConnectionMap.forEach((uris, conn) -> {
@@ -211,7 +211,7 @@ public class RedisUtil implements Serializable, Closeable {
                 conn.close();
                 log.info("关闭链接成功 {}", uris);
             } catch (Exception e) {
-                log.warn("关闭链接失败 {} {}", uris, e.getMessage());
+                log.warn("关闭链接失败 {} {}", uris, ExceptionUtil.stacktraceToString(e));
             }
         });
         clientMap.forEach((uri, client) -> {
@@ -220,7 +220,7 @@ public class RedisUtil implements Serializable, Closeable {
                 client.shutdown();
                 log.info("关闭客户端成功 {}", uri);
             } catch (Exception e) {
-                log.warn("关闭客户端失败 {} {}", uri, e.getMessage());
+                log.warn("关闭客户端失败 {} {}", uri, ExceptionUtil.stacktraceToString(e));
             }
         });
         clusterClientMap.forEach((uris, client) -> {
@@ -229,7 +229,7 @@ public class RedisUtil implements Serializable, Closeable {
                 client.shutdown();
                 log.info("关闭客户端成功 {}", uris);
             } catch (Exception e) {
-                log.warn("关闭客户端失败 {} {}", uris, e.getMessage());
+                log.warn("关闭客户端失败 {} {}", uris, ExceptionUtil.stacktraceToString(e));
             }
         });
 
