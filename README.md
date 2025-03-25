@@ -15,7 +15,7 @@
 <dependency>
     <groupId>sunyu.util</groupId>
     <artifactId>util-redis</artifactId>
-    <!-- {kafka-clients.version}_{util.version}_{jdk.version}_{architecture.version} -->
+    <!-- {lettuce-core.version}_{util.version}_{jdk.version}_{architecture.version} -->
     <version>6.5.5.RELEASE_1.0_jdk8_x64</version>
 </dependency>
 ```
