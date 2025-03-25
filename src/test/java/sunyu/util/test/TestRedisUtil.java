@@ -1,22 +1,22 @@
 package sunyu.util.test;
 
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
-import io.lettuce.core.*;
+import io.lettuce.core.KeyValue;
+import io.lettuce.core.RedisClient;
+import io.lettuce.core.RedisURI;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
 import io.lettuce.core.cluster.RedisClusterClient;
 import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
 import io.lettuce.core.cluster.api.sync.RedisAdvancedClusterCommands;
 import org.junit.jupiter.api.Test;
-import sunyu.util.RedisUtil;
+import sunyu.util.RedisClusterUtil;
+import sunyu.util.RedisStandaloneUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 public class TestRedisUtil {
     Log log = LogFactory.get();
@@ -88,133 +88,53 @@ public class TestRedisUtil {
     }
 
 
-    /**
-     * get命令
-     */
     @Test
     void testGet() {
-        RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
-        StatefulRedisConnection<String, String> standalone = redisUtil.standalone("redis://192.168.11.39:16379/0");//全局只需要一个
+        RedisStandaloneUtil redisStandaloneUtil = RedisStandaloneUtil.builder().uri("redis://192.168.11.39:16379/0").build();
+        String v = redisStandaloneUtil.getCommands().get("subsidy:bc:userinfo");
+        log.info(v);
+        v = redisStandaloneUtil.get("subsidy:bc:userinfo");
+        log.info(v);
+        redisStandaloneUtil.close();
 
-        //同步调用
-        log.debug(standalone.sync().get("subsidy:bc:userinfo"));
 
-        redisUtil.close();//如果程序不再使用了，可以调用这个
+        /*RedisSentinelUtil redisSentinelUtil = RedisSentinelUtil.builder().uri("redis-sentinel://localhost:26379,localhost:26380/0#mymaster").build();
+        v = redisSentinelUtil.getCommands().get("subsidy:bc:userinfo");
+        log.info(v);
+        v = redisSentinelUtil.get("subsidy:bc:userinfo");
+        log.info(v);
+        redisSentinelUtil.close();*/
     }
 
     @Test
     void testMget() {
-        RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
-        StatefulRedisClusterConnection<String, String> cluster = redisUtil.cluster(
-                Arrays.asList("redis://192.168.11.124:7001", "redis://192.168.11.124:7002", "redis://192.168.11.124:7003",
-                        "redis://192.168.11.125:7004", "redis://192.168.11.125:7005", "redis://192.168.11.125:7006"));//全局只需要一个
+        RedisClusterUtil redisClusterUtil = RedisClusterUtil.builder()
+                .nodes("192.168.11.124:7001,192.168.11.124:7002,192.168.11.124:7003,192.168.11.125:7004,192.168.11.125:7005,192.168.11.125:7006")
+                .build();
 
-        //同步调用
-        for (KeyValue<String, String> kv : cluster.sync().mget("relation:16200442", "farm:realtime:0865306056453850")) {
+        for (KeyValue<String, String> kv : redisClusterUtil.getCommands().mget("relation:16200442", "farm:realtime:0865306056453850", "abc")) {
             if (kv.isEmpty()) {
-                log.debug("{}", kv);
+                log.debug("{}", kv.getKey());
             } else {
                 log.debug("{} {}", kv.getKey(), kv.getValue());
             }
         }
 
-        redisUtil.close();//如果程序不再使用了，可以调用这个
+        redisClusterUtil.close();
     }
 
     @Test
-    void testKeys() {
-        String nodes = "192.168.11.124:7001,192.168.11.124:7002,192.168.11.124:7003,192.168.11.125:7004,192.168.11.125:7005,192.168.11.125:7006";
-        RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
-        StatefulRedisClusterConnection<String, String> cluster = redisUtil
-                .cluster(Arrays.stream(nodes.split(","))
-                        .map(s -> s.split(":"))
-                        .map(arr -> StrUtil.format("redis://{}:{}", arr[0], arr[1]))
-                        .collect(Collectors.toList()));
-        RedisAdvancedClusterCommands<String, String> sync = cluster.sync();
+    void testScan() {
+        RedisClusterUtil redisClusterUtil = RedisClusterUtil.builder()
+                .uriStrList(Arrays.asList("redis://192.168.11.124:7001", "redis://192.168.11.124:7002", "redis://192.168.11.124:7003",
+                        "redis://192.168.11.125:7004", "redis://192.168.11.125:7005", "redis://192.168.11.125:7006"))
+                .build();
 
-        KeyScanCursor<String> scanCursor = null;
-        ScanArgs scanArgs = new ScanArgs().match("ne:realtime:*").limit(500);
-        do {
-            scanCursor = (scanCursor == null) ? sync.scan(scanArgs) : sync.scan(scanCursor, scanArgs);
-            for (String key : scanCursor.getKeys()) {
-                log.info("{}", key);
-            }
-        } while (!scanCursor.isFinished());
+        redisClusterUtil.scan("ne:realtime:*", 500, key -> {
+            log.info("{}", key);
+        });
 
-        redisUtil.close();
+        redisClusterUtil.close();
     }
 
-    @Test
-    void t006() {
-        RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
-        StatefulRedisClusterConnection<String, String> cluster = redisUtil.cluster(
-                Arrays.asList("redis://192.168.11.124:7001", "redis://192.168.11.124:7002", "redis://192.168.11.124:7003",
-                        "redis://192.168.11.125:7004", "redis://192.168.11.125:7005", "redis://192.168.11.125:7006"));//全局只需要一个
-
-        for (KeyValue<String, String> kv : cluster.sync().mget("farm:realtime:TEST202406259541", "farm:realtime:EM9101B1DYCFESHJ", "farm:realtime:XJXY142230900083", "farm:realtime:TEST202406259660", "farm:realtime:TEST202412345600", "farm:realtime:EC73BT2405280002", "farm:realtime:test202406265000", "farm:realtime:TEST102404G002931", "farm:realtime:test202406259846", "farm:realtime:TEST202406259005", "farm:realtime:TESTDNG2023081103", "farm:realtime:TEST202406259624", "farm:realtime:TEST202406259841", "farm:realtime:TEST202407109635", "farm:realtime:TEST202406259220", "farm:realtime:TEST202406256565", "farm:realtime:TEST202406279850", "farm:realtime:TEST202406279856", "farm:realtime:TEST202407049036", "farm:realtime:TEST202406256987", "farm:realtime:TEST202406279652", "farm:realtime:TEST2024062596536", "farm:realtime:TEST2024062795632", "farm:realtime:TEST202406251118", "farm:realtime:TESTDNG2024062994", "farm:realtime:TESTDNG2024062993", "farm:realtime:TEST202406259006", "farm:realtime:test5678901234590", "farm:realtime:BCTEST2109100015", "farm:realtime:TEST202406254447", "farm:realtime:TEST202406259964", "farm:realtime:TEST202406259000", "farm:realtime:TEST202406259004", "farm:realtime:33333333333333333333333333333333", "farm:realtime:TEST202406269562", "farm:realtime:EC1234567812312343", "farm:realtime:test202406265666", "farm:realtime:TEST202406259611", "farm:realtime:TEST2024062596310", "farm:realtime:TEST202406259998", "farm:realtime:TEST202406259357", "farm:realtime:TEST2024062596358", "farm:realtime:test2022052598789", "farm:realtime:TEST202406249651", "farm:realtime:SUNYUDIDTEST00002", "farm:realtime:600064", "farm:realtime:GUOTEST000000001", "farm:realtime:test202405286953", "farm:realtime:TESTDNG2023081104", "farm:realtime:EC71BT2405110185")) {
-            if (kv.isEmpty()) {
-                log.debug("{}", kv);
-            } else {
-                log.debug("{} {}", kv.getKey(), kv.getValue());
-            }
-        }
-
-        redisUtil.close();//如果程序不再使用了，可以调用这个
-    }
-
-    @Test
-    void t007() {
-        RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
-        StatefulRedisConnection<String, String> standalone = redisUtil.standalone("redis://192.168.11.39:16379/0");//全局只需要一个
-
-        //异步调用
-        RedisFuture<String> stringRedisFuture = standalone.async().get("subsidy:bc:userinfo");
-        try {
-            String v = stringRedisFuture.get();//等待异步方法返回
-            log.info("{}", v);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        } catch (ExecutionException e) {
-            throw new RuntimeException(e);
-        }
-
-        redisUtil.close();//如果程序不再使用了，可以调用这个
-    }
-
-    @Test
-    void t008() {
-        RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
-        StatefulRedisClusterConnection<String, String> cluster = redisUtil.cluster(
-                Arrays.asList("redis://192.168.11.124:7001", "redis://192.168.11.124:7002", "redis://192.168.11.124:7003",
-                        "redis://192.168.11.125:7004", "redis://192.168.11.125:7005", "redis://192.168.11.125:7006"));//全局只需要一个
-
-        //异步调用
-        RedisFuture<List<KeyValue<String, String>>> mget = cluster.async().mget("relation:16200442", "farm:realtime:0865306056453850");
-        try {
-            for (KeyValue<String, String> kv : mget.get()) {
-                if (kv.isEmpty()) {
-                    log.debug("{}", kv);
-                } else {
-                    log.debug("{} {}", kv.getKey(), kv.getValue());
-                }
-            }
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        } catch (ExecutionException e) {
-            throw new RuntimeException(e);
-        }
-
-        redisUtil.close();//如果程序不再使用了，可以调用这个
-    }
-
-    @Test
-    void t009() {
-        RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
-        StatefulRedisClusterConnection<String, String> cluster = redisUtil.cluster(
-                Arrays.asList("redis://192.168.11.124:7001", "redis://192.168.11.124:7002", "redis://192.168.11.124:7003",
-                        "redis://192.168.11.125:7004", "redis://192.168.11.125:7005", "redis://192.168.11.125:7006"));//全局只需要一个
-
-
-        redisUtil.close();//如果程序不再使用了，可以调用这个
-    }
 }

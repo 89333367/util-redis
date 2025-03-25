@@ -15,86 +15,60 @@
 <dependency>
     <groupId>sunyu.util</groupId>
     <artifactId>util-redis</artifactId>
-    <version>lettuce-6.5.0.RELEASE_v1.0</version>
+    <!-- {kafka-clients.version}_{util.version}_{jdk.version}_{architecture.version} -->
+    <version>6.5.5.RELEASE_1.0_jdk8_x64</version>
 </dependency>
 ```
 
 ## 例子
 
 ```java
-
 @Test
-void t004() {
-    RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
-    StatefulRedisConnection<String, String> standalone = redisUtil.standalone("redis://192.168.11.39:16379/0");//全局只需要一个
+void testGet() {
+    RedisStandaloneUtil redisStandaloneUtil = RedisStandaloneUtil.builder().uri("redis://192.168.11.39:16379/0").build();
+    String v = redisStandaloneUtil.getCommands().get("subsidy:bc:userinfo");
+    log.info(v);
+    v = redisStandaloneUtil.get("subsidy:bc:userinfo");
+    log.info(v);
+    redisStandaloneUtil.close();
 
-    log.debug(standalone.sync().get("subsidy:bc:userinfo"));
-
-    redisUtil.close();//如果程序不再使用了，可以调用这个
+    /*RedisSentinelUtil redisSentinelUtil = RedisSentinelUtil.builder().uri("redis-sentinel://localhost:26379,localhost:26380/0#mymaster").build();
+    v = redisSentinelUtil.getCommands().get("subsidy:bc:userinfo");
+    log.info(v);
+    v = redisSentinelUtil.get("subsidy:bc:userinfo");
+    log.info(v);
+    redisSentinelUtil.close();*/
 }
 
 @Test
-void t005() {
-    RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
-    StatefulRedisClusterConnection<String, String> cluster = redisUtil.cluster(
-            Arrays.asList("redis://192.168.11.124:7001", "redis://192.168.11.124:7002", "redis://192.168.11.124:7003",
-                    "redis://192.168.11.125:7004", "redis://192.168.11.125:7005", "redis://192.168.11.125:7006"));//全局只需要一个
+void testMget() {
+    RedisClusterUtil redisClusterUtil = RedisClusterUtil.builder()
+            .nodes("192.168.11.124:7001,192.168.11.124:7002,192.168.11.124:7003,192.168.11.125:7004,192.168.11.125:7005,192.168.11.125:7006")
+            .build();
 
-    for (KeyValue<String, String> kv : cluster.sync().mget("relation:16200442", "farm:realtime:0865306056453850")) {
+    for (KeyValue<String, String> kv : redisClusterUtil.getCommands().mget("relation:16200442", "farm:realtime:0865306056453850", "abc")) {
         if (kv.isEmpty()) {
-            log.debug("{}", kv);
+            log.debug("{}", kv.getKey());
         } else {
             log.debug("{} {}", kv.getKey(), kv.getValue());
         }
     }
 
-    redisUtil.close();//如果程序不再使用了，可以调用这个
-}
-
-
-@Test
-void t007() {
-    RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
-    StatefulRedisConnection<String, String> standalone = redisUtil.standalone("redis://192.168.11.39:16379/0");//全局只需要一个
-
-    //异步调用
-    RedisFuture<String> stringRedisFuture = standalone.async().get("subsidy:bc:userinfo");
-    try {
-        String v = stringRedisFuture.get();//等待异步方法返回
-        log.info("{}", v);
-    } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-    } catch (ExecutionException e) {
-        throw new RuntimeException(e);
-    }
-
-    redisUtil.close();//如果程序不再使用了，可以调用这个
+    redisClusterUtil.close();
 }
 
 @Test
-void t008() {
-    RedisUtil redisUtil = RedisUtil.builder().build();//全局只需要一个
-    StatefulRedisClusterConnection<String, String> cluster = redisUtil.cluster(
-            Arrays.asList("redis://192.168.11.124:7001", "redis://192.168.11.124:7002", "redis://192.168.11.124:7003",
-                    "redis://192.168.11.125:7004", "redis://192.168.11.125:7005", "redis://192.168.11.125:7006"));//全局只需要一个
+void testScan() {
+    RedisClusterUtil redisClusterUtil = RedisClusterUtil.builder()
+            .uriStrList(Arrays.asList("redis://192.168.11.124:7001", "redis://192.168.11.124:7002", "redis://192.168.11.124:7003",
+                    "redis://192.168.11.125:7004", "redis://192.168.11.125:7005", "redis://192.168.11.125:7006"))
+            .build();
 
-    //异步调用
-    RedisFuture<List<KeyValue<String, String>>> mget = cluster.async().mget("relation:16200442", "farm:realtime:0865306056453850");
-    try {
-        for (KeyValue<String, String> kv : mget.get()) {
-            if (kv.isEmpty()) {
-                log.debug("{}", kv);
-            } else {
-                log.debug("{} {}", kv.getKey(), kv.getValue());
-            }
-        }
-    } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-    } catch (ExecutionException e) {
-        throw new RuntimeException(e);
-    }
+    redisClusterUtil.scan("ne:realtime:*", 500, key -> {
+        log.info("{}", key);
+    });
 
-    redisUtil.close();//如果程序不再使用了，可以调用这个
+    redisClusterUtil.close();
 }
 ```
 
