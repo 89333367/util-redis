@@ -28,13 +28,14 @@ public class TestRedisUtil {
     void testStandalone() {
         // Syntax: redis://[password@]host[:port][/databaseNumber]
         // Syntax: redis://[username:password@]host[:port][/databaseNumber]
-        RedisClient redisClient = RedisClient.create("redis://192.168.11.39:16379/0");
+        //RedisClient redisClient = RedisClient.create("redis://192.168.11.39:16379/0");
+        RedisClient redisClient = RedisClient.create("redis://172.16.1.22:26379/0");
         StatefulRedisConnection<String, String> connection = redisClient.connect();
         log.debug("Connected to Redis");
         RedisCommands<String, String> redisCommands = connection.sync();
 
         // todo
-        log.debug(redisCommands.get("subsidy:bc:userinfo"));
+        log.debug(redisCommands.get("AgFarm-1525b3d086d9439c99cab5acfd565532-15-800-600"));
 
         connection.close();
         redisClient.shutdown();
