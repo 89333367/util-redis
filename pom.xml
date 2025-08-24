@@ -59,47 +59,32 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.6.0</version>
-                <configuration>
-                    <!-- 打包时是否生成dependency-reduced-pom.xml -->
-                    <createDependencyReducedPom>false</createDependencyReducedPom>
-                    <!--只包含该项目代码中用到的jar,在父项目中引入了，但在当前模块中没有用到就会被删掉-->
-                    <minimizeJar>true</minimizeJar>
-                    <!-- 重命名包名解决冲突 -->
-                    <relocations>
-                        <relocation>
-                            <pattern>io.netty</pattern>
-                            <shadedPattern>relocation.io.netty</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>org</pattern>
-                            <shadedPattern>relocation.org</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>reactor</pattern>
-                            <shadedPattern>relocation.reactor</shadedPattern>
-                        </relocation>
-                        <!--<relocation>
-                            <pattern>io.lettuce</pattern>
-                            <shadedPattern>relocation.io.lettuce</shadedPattern>
-                        </relocation>-->
-                    </relocations>
-                </configuration>
                 <executions>
                     <execution>
-                        <configuration>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/**</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
                         <phase>package</phase>
                         <goals>
                             <goal>shade</goal>
                         </goals>
+                        <configuration>
+                            <!-- 添加以下配置来禁用 dependency-reduced-pom.xml 文件生成 -->
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <relocations>
+                                <!--<relocation>
+                                    <pattern>io.netty</pattern>
+                                    <shadedPattern>relocation.io.netty</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org</pattern>
+                                    <shadedPattern>relocation.org</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>reactor</pattern>
+                                    <shadedPattern>relocation.reactor</shadedPattern>
+                                </relocation>-->
+                            </relocations>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName>shaded</shadedClassifierName>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -137,9 +122,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.14.0</version>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                    <encoding>UTF-8</encoding>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
                 </configuration>
             </plugin>
         </plugins>

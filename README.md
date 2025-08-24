@@ -17,6 +17,7 @@
     <artifactId>util-redis</artifactId>
     <!-- {lettuce-core.version}_{util.version}_{jdk.version}_{architecture.version} -->
     <version>6.8.0.RELEASE_1.0_jdk8_x64</version>
+    <classifier>shaded</classifier>
 </dependency>
 ```
 
