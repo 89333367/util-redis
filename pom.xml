@@ -7,7 +7,7 @@
     <groupId>sunyu.util</groupId>
     <artifactId>util-redis</artifactId>
     <!-- {lettuce-core.version}_{util.version}_{jdk.version}_{architecture.version} -->
-    <version>6.8.0.RELEASE_1.0_jdk8_x64</version>
+    <version>6.8.1.RELEASE_1.0_jdk8_x64</version>
 
     <properties>
         <java.version>1.8</java.version>
@@ -41,7 +41,7 @@
         <dependency>
             <groupId>io.lettuce</groupId>
             <artifactId>lettuce-core</artifactId>
-            <version>6.8.0.RELEASE</version>
+            <version>6.8.1.RELEASE</version>
         </dependency>
         <!-- https://central.sonatype.com/artifact/org.junit.jupiter/junit-jupiter/versions -->
         <dependency>
