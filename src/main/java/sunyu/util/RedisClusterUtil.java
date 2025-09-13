@@ -27,7 +27,7 @@ public class RedisClusterUtil implements AutoCloseable {
     }
 
     private RedisClusterUtil(Config config) {
-        log.info("[构建RedisClusterUtil] 开始");
+        log.info("[构建 {}] 开始", this.getClass().getSimpleName());
         config.client = RedisClusterClient.create(config.uriList);
         log.info("构建集群拓扑参数开始");
         ClusterTopologyRefreshOptions clusterTopologyRefreshOptions = ClusterTopologyRefreshOptions.builder()
@@ -48,7 +48,7 @@ public class RedisClusterUtil implements AutoCloseable {
         config.connection.setReadFrom(ReadFrom.REPLICA_PREFERRED);//设置为从副本中读取首选值，如果没有可用的副本，则回退到上游。
         log.info("设置读取策略完毕 {}", config.connection.getReadFrom());
         config.commands = config.connection.sync();
-        log.info("[构建RedisClusterUtil] 结束");
+        log.info("[构建 {}] 结束", this.getClass().getSimpleName());
 
         this.config = config;
     }
@@ -71,6 +71,7 @@ public class RedisClusterUtil implements AutoCloseable {
          * 设置连接
          *
          * @param nodes 192.168.11.124:7001,192.168.11.124:7002,192.168.11.124:7003,192.168.11.125:7004,192.168.11.125:7005,192.168.11.125:7006
+         *
          * @return
          */
         public Builder nodes(String nodes) {
@@ -89,6 +90,7 @@ public class RedisClusterUtil implements AutoCloseable {
          * </pre>
          *
          * @param uriStrList
+         *
          * @return
          */
         public Builder uriStrList(List<String> uriStrList) {
@@ -103,6 +105,7 @@ public class RedisClusterUtil implements AutoCloseable {
          * 设置连接
          *
          * @param uriList
+         *
          * @return
          */
         public Builder uriList(List<RedisURI> uriList) {
@@ -116,10 +119,10 @@ public class RedisClusterUtil implements AutoCloseable {
      */
     @Override
     public void close() {
-        log.info("[销毁RedisClusterUtil] 开始");
+        log.info("[销毁 {}] 开始", this.getClass().getSimpleName());
         config.connection.close();
         config.client.shutdown();
-        log.info("[销毁RedisClusterUtil] 开始");
+        log.info("[销毁 {}] 开始", this.getClass().getSimpleName());
     }
 
     /**

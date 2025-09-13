@@ -19,12 +19,12 @@ public class RedisSentinelUtil implements AutoCloseable {
     }
 
     private RedisSentinelUtil(Config config) {
-        log.info("[构建RedisSentinelUtil] 开始");
+        log.info("[构建 {}] 开始", this.getClass().getSimpleName());
         config.client = RedisClient.create();
         config.connection = MasterReplica.connect(config.client, StringCodec.UTF8, RedisURI.create(config.uri));
         config.connection.setReadFrom(ReadFrom.UPSTREAM_PREFERRED);//设置读取策略
         config.commands = config.connection.sync();
-        log.info("[构建RedisSentinelUtil] 结束");
+        log.info("[构建 {}] 结束", this.getClass().getSimpleName());
 
         this.config = config;
     }
@@ -51,6 +51,7 @@ public class RedisSentinelUtil implements AutoCloseable {
          * </pre>
          *
          * @param uri
+         *
          * @return
          */
         public Builder uri(String uri) {
@@ -64,10 +65,10 @@ public class RedisSentinelUtil implements AutoCloseable {
      */
     @Override
     public void close() {
-        log.info("[回收RedisSentinelUtil] 开始");
+        log.info("[回收 {}] 开始", this.getClass().getSimpleName());
         config.connection.close();
         config.client.shutdown();
-        log.info("[回收RedisSentinelUtil] 结束");
+        log.info("[回收 {}] 结束", this.getClass().getSimpleName());
     }
 
     /**
@@ -83,6 +84,7 @@ public class RedisSentinelUtil implements AutoCloseable {
      * 获取值
      *
      * @param key
+     *
      * @return
      */
     public String get(String key) {

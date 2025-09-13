@@ -20,11 +20,11 @@ public class RedisStandaloneUtil implements AutoCloseable {
     }
 
     private RedisStandaloneUtil(Config config) {
-        log.info("[构建RedisStandaloneUtil] 开始");
+        log.info("[构建 {}] 开始", this.getClass().getSimpleName());
         config.client = RedisClient.create(config.uri);
         config.connection = config.client.connect();
         config.commands = config.connection.sync();
-        log.info("[构建RedisStandaloneUtil] 结束");
+        log.info("[构建 {}] 结束", this.getClass().getSimpleName());
 
         this.config = config;
     }
@@ -54,6 +54,7 @@ public class RedisStandaloneUtil implements AutoCloseable {
          * </pre>
          *
          * @param uri
+         *
          * @return
          */
         public Builder uri(String uri) {
@@ -67,10 +68,10 @@ public class RedisStandaloneUtil implements AutoCloseable {
      */
     @Override
     public void close() {
-        log.info("[回收RedisStandaloneUtil] 开始");
+        log.info("[回收 {}] 开始", this.getClass().getSimpleName());
         config.connection.close();
         config.client.shutdown();
-        log.info("[回收RedisStandaloneUtil] 结束");
+        log.info("[回收 {}] 结束", this.getClass().getSimpleName());
     }
 
 
@@ -87,6 +88,7 @@ public class RedisStandaloneUtil implements AutoCloseable {
      * 获取值
      *
      * @param key
+     *
      * @return
      */
     public String get(String key) {
