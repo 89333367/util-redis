@@ -10,7 +10,7 @@ import io.lettuce.core.codec.StringCodec;
 import io.lettuce.core.masterreplica.MasterReplica;
 import io.lettuce.core.masterreplica.StatefulRedisMasterReplicaConnection;
 
-public class RedisSentinelUtil implements AutoCloseable {
+public class RedisSentinelUtil extends AbstractRedisOperations<RedisCommands<String, String>> implements AutoCloseable {
     private final Log log = LogFactory.get();
     private final Config config;
 
@@ -78,17 +78,6 @@ public class RedisSentinelUtil implements AutoCloseable {
      */
     public RedisCommands<String, String> getCommands() {
         return config.commands;
-    }
-
-    /**
-     * 获取值
-     *
-     * @param key
-     *
-     * @return
-     */
-    public String get(String key) {
-        return config.commands.get(key);
     }
 
 }

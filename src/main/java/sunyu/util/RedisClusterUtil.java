@@ -3,10 +3,8 @@ package sunyu.util;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
-import io.lettuce.core.KeyScanCursor;
 import io.lettuce.core.ReadFrom;
 import io.lettuce.core.RedisURI;
-import io.lettuce.core.ScanArgs;
 import io.lettuce.core.cluster.ClusterClientOptions;
 import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
 import io.lettuce.core.cluster.RedisClusterClient;
@@ -18,7 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class RedisClusterUtil implements AutoCloseable {
+public class RedisClusterUtil extends AbstractRedisOperations<RedisAdvancedClusterCommands<String, String>> implements AutoCloseable {
     private final Log log = LogFactory.get();
     private final Config config;
 
@@ -132,24 +130,6 @@ public class RedisClusterUtil implements AutoCloseable {
      */
     public RedisAdvancedClusterCommands<String, String> getCommands() {
         return config.commands;
-    }
-
-    /**
-     * 扫描
-     *
-     * @param match   匹配key，可以使用 * 号
-     * @param limit   每批扫描多少条，不建议大于500
-     * @param handler 处理逻辑
-     */
-    public void scan(String match, int limit, java.util.function.Consumer<String> handler) {
-        KeyScanCursor<String> scanCursor = null;
-        ScanArgs scanArgs = new ScanArgs().match(match).limit(limit);
-        do {
-            scanCursor = (scanCursor == null) ? config.commands.scan(scanArgs) : config.commands.scan(scanCursor, scanArgs);
-            for (String key : scanCursor.getKeys()) {
-                handler.accept(key);
-            }
-        } while (!scanCursor.isFinished());
     }
 
 }

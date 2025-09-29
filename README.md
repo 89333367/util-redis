@@ -71,5 +71,22 @@ void testScan() {
 
     redisClusterUtil.close();
 }
+
+
+@Test
+void testGeoradius() {
+    RedisStandaloneUtil redisStandaloneUtil = RedisStandaloneUtil.builder()
+            .uri("redis://11KYms98qm@192.168.13.73:30794/2")
+            .build();
+
+    // GEOADD places {longitude} {latitude} "{address_name}"
+    redisStandaloneUtil.geoadd("pca", 116.37304, 39.92594, "北京市西城区什刹海街道西什库大街19号院");
+
+    // GEORADIUS places {longitude} {latitude} {radius} m COUNT 1 ASC
+    String member = redisStandaloneUtil.getMemberBygeoradius("pca", 116.37304, 39.92594, 10);
+    log.info(member);
+
+    redisStandaloneUtil.close();
+}
 ```
 

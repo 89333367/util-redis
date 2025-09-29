@@ -11,7 +11,7 @@ import io.lettuce.core.api.sync.RedisCommands;
  *
  * @author SunYu
  */
-public class RedisStandaloneUtil implements AutoCloseable {
+public class RedisStandaloneUtil extends AbstractRedisOperations<RedisCommands<String, String>> implements AutoCloseable {
     private final Log log = LogFactory.get();
     private final Config config;
 
@@ -82,17 +82,6 @@ public class RedisStandaloneUtil implements AutoCloseable {
      */
     public RedisCommands<String, String> getCommands() {
         return config.commands;
-    }
-
-    /**
-     * 获取值
-     *
-     * @param key
-     *
-     * @return
-     */
-    public String get(String key) {
-        return config.commands.get(key);
     }
 
 }
