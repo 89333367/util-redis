@@ -1,16 +1,17 @@
 package sunyu.util;
 
+import java.util.List;
+
 import cn.hutool.core.collection.CollUtil;
 import io.lettuce.core.GeoArgs;
 import io.lettuce.core.GeoWithin;
 import io.lettuce.core.KeyScanCursor;
 import io.lettuce.core.ScanArgs;
-import io.lettuce.core.api.sync.RedisCommands;
-import io.lettuce.core.cluster.api.sync.RedisAdvancedClusterCommands;
+import io.lettuce.core.api.sync.RedisGeoCommands;
+import io.lettuce.core.api.sync.RedisKeyCommands;
+import io.lettuce.core.api.sync.RedisStringCommands;
 
-import java.util.List;
-
-public abstract class AbstractRedisOperations<T> {
+public abstract class AbstractRedisOperations<T extends RedisStringCommands<String, String> & RedisKeyCommands<String, String> & RedisGeoCommands<String, String>> {
     public abstract T getCommands();
 
     /**
@@ -21,12 +22,7 @@ public abstract class AbstractRedisOperations<T> {
      * @return 值
      */
     public String get(String key) {
-        T redisCommands = getCommands();
-        if (redisCommands instanceof RedisAdvancedClusterCommands) {
-            return ((RedisAdvancedClusterCommands<String, String>) redisCommands).get(key);
-        } else {
-            return ((RedisCommands<String, String>) redisCommands).get(key);
-        }
+        return getCommands().get(key);
     }
 
     /**
@@ -37,28 +33,15 @@ public abstract class AbstractRedisOperations<T> {
      * @param handler 处理器
      */
     public void scan(String match, int limit, java.util.function.Consumer<String> handler) {
-        T redisCommands = getCommands();
-        if (redisCommands instanceof RedisAdvancedClusterCommands) {
-            RedisAdvancedClusterCommands<String, String> commands = (RedisAdvancedClusterCommands<String, String>) redisCommands;
-            KeyScanCursor<String> scanCursor = null;
-            ScanArgs scanArgs = new ScanArgs().match(match).limit(limit);
-            do {
-                scanCursor = (scanCursor == null) ? commands.scan(scanArgs) : commands.scan(scanCursor, scanArgs);
-                for (String key : scanCursor.getKeys()) {
-                    handler.accept(key);
-                }
-            } while (!scanCursor.isFinished());
-        } else {
-            RedisCommands<String, String> commands = (RedisCommands<String, String>) redisCommands;
-            KeyScanCursor<String> scanCursor = null;
-            ScanArgs scanArgs = new ScanArgs().match(match).limit(limit);
-            do {
-                scanCursor = (scanCursor == null) ? commands.scan(scanArgs) : commands.scan(scanCursor, scanArgs);
-                for (String key : scanCursor.getKeys()) {
-                    handler.accept(key);
-                }
-            } while (!scanCursor.isFinished());
-        }
+        T commands = getCommands();
+        KeyScanCursor<String> scanCursor = null;
+        ScanArgs scanArgs = new ScanArgs().match(match).limit(limit);
+        do {
+            scanCursor = (scanCursor == null) ? commands.scan(scanArgs) : commands.scan(scanCursor, scanArgs);
+            for (String key : scanCursor.getKeys()) {
+                handler.accept(key);
+            }
+        } while (!scanCursor.isFinished());
     }
 
     /**
@@ -74,31 +57,18 @@ public abstract class AbstractRedisOperations<T> {
     public String getMemberBygeoradius(String key, double lon, double lat, double m) {
         // GEORADIUS places {longitude} {latitude} {radius} m COUNT 1 ASC
         GeoArgs args = new GeoArgs()
-                .asc()             // 按距离升序排列
-                .withCount(1);         // 只返回最近的1个结果
+                .asc() // 按距离升序排列
+                .withCount(1); // 只返回最近的1个结果
         List<GeoWithin<String>> results;
-        T redisCommands = getCommands();
-        if (redisCommands instanceof RedisAdvancedClusterCommands) {
-            RedisAdvancedClusterCommands<String, String> commands = (RedisAdvancedClusterCommands<String, String>) redisCommands;
-            results = commands.georadius(
-                    key,              // key
-                    lon,             // 经度
-                    lat,              // 纬度
-                    m,                    // 距离
-                    GeoArgs.Unit.m,   // 单位（米）
-                    args                   // 参数配置
-            );
-        } else {
-            RedisCommands<String, String> commands = (RedisCommands<String, String>) redisCommands;
-            results = commands.georadius(
-                    key,              // key
-                    lon,             // 经度
-                    lat,              // 纬度
-                    m,                    // 距离
-                    GeoArgs.Unit.m,   // 单位（米）
-                    args                   // 参数配置
-            );
-        }
+        T commands = getCommands();
+        results = commands.georadius(
+                key, // key
+                lon, // 经度
+                lat, // 纬度
+                m, // 距离
+                GeoArgs.Unit.m, // 单位（米）
+                args // 参数配置
+        );
         if (CollUtil.isNotEmpty(results)) {
             return results.get(0).getMember();
         }
@@ -115,14 +85,8 @@ public abstract class AbstractRedisOperations<T> {
      */
     public void geoadd(String key, double lon, double lat, String member) {
         // GEOADD places {longitude} {latitude} "{address_name}"
-        T redisCommands = getCommands();
-        if (redisCommands instanceof RedisAdvancedClusterCommands) {
-            RedisAdvancedClusterCommands<String, String> commands = (RedisAdvancedClusterCommands<String, String>) redisCommands;
-            commands.geoadd(key, lon, lat, member);
-        } else {
-            RedisCommands<String, String> commands = (RedisCommands<String, String>) redisCommands;
-            commands.geoadd(key, lon, lat, member);
-        }
+        T commands = getCommands();
+        commands.geoadd(key, lon, lat, member);
     }
 
 }

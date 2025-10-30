@@ -1,5 +1,10 @@
 package sunyu.util;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
@@ -11,12 +16,8 @@ import io.lettuce.core.cluster.RedisClusterClient;
 import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
 import io.lettuce.core.cluster.api.sync.RedisAdvancedClusterCommands;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
-public class RedisClusterUtil extends AbstractRedisOperations<RedisAdvancedClusterCommands<String, String>> implements AutoCloseable {
+public class RedisClusterUtil extends AbstractRedisOperations<RedisAdvancedClusterCommands<String, String>>
+        implements AutoCloseable {
     private final Log log = LogFactory.get();
     private final Config config;
 
@@ -24,6 +25,7 @@ public class RedisClusterUtil extends AbstractRedisOperations<RedisAdvancedClust
         return new Builder();
     }
 
+    @SuppressWarnings("deprecation")
     private RedisClusterUtil(Config config) {
         log.info("[构建 {}] 开始", this.getClass().getSimpleName());
         config.client = RedisClusterClient.create(config.uriList);

@@ -65,10 +65,10 @@ public class RedisSentinelUtil extends AbstractRedisOperations<RedisCommands<Str
      */
     @Override
     public void close() {
-        log.info("[回收 {}] 开始", this.getClass().getSimpleName());
+        log.info("[销毁 {}] 开始", this.getClass().getSimpleName());
         config.connection.close();
         config.client.shutdown();
-        log.info("[回收 {}] 结束", this.getClass().getSimpleName());
+        log.info("[销毁 {}] 结束", this.getClass().getSimpleName());
     }
 
     /**

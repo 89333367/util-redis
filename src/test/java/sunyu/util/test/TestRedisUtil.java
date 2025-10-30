@@ -1,5 +1,11 @@
 package sunyu.util.test;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import io.lettuce.core.KeyValue;
@@ -10,13 +16,8 @@ import io.lettuce.core.api.sync.RedisCommands;
 import io.lettuce.core.cluster.RedisClusterClient;
 import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
 import io.lettuce.core.cluster.api.sync.RedisAdvancedClusterCommands;
-import org.junit.jupiter.api.Test;
 import sunyu.util.RedisClusterUtil;
 import sunyu.util.RedisStandaloneUtil;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class TestRedisUtil {
     Log log = LogFactory.get();
@@ -61,7 +62,8 @@ public class TestRedisUtil {
         RedisAdvancedClusterCommands<String, String> redisClusterCommands = connection.sync();
 
         // todo
-        for (KeyValue<String, String> kv : redisClusterCommands.mget("relation:16200442", "farm:realtime:0865306056453850")) {
+        for (KeyValue<String, String> kv : redisClusterCommands.mget("relation:16200442",
+                "farm:realtime:0865306056453850")) {
             log.debug("{} {}", kv.getKey(), kv.getValue());
         }
 
@@ -88,16 +90,15 @@ public class TestRedisUtil {
         redisClient.shutdown();
     }
 
-
     @Test
     void testGet() {
-        RedisStandaloneUtil redisStandaloneUtil = RedisStandaloneUtil.builder().uri("redis://192.168.11.39:16379/0").build();
+        RedisStandaloneUtil redisStandaloneUtil = RedisStandaloneUtil.builder().uri("redis://192.168.11.39:16379/0")
+                .build();
         String v = redisStandaloneUtil.getCommands().get("subsidy:bc:userinfo");
         log.info(v);
         v = redisStandaloneUtil.get("subsidy:bc:userinfo");
         log.info(v);
         redisStandaloneUtil.close();
-
 
         /*RedisSentinelUtil redisSentinelUtil = RedisSentinelUtil.builder().uri("redis-sentinel://localhost:26379,localhost:26380/0#mymaster").build();
         v = redisSentinelUtil.getCommands().get("subsidy:bc:userinfo");
@@ -113,7 +114,8 @@ public class TestRedisUtil {
                 .nodes("192.168.11.124:7001,192.168.11.124:7002,192.168.11.124:7003,192.168.11.125:7004,192.168.11.125:7005,192.168.11.125:7006")
                 .build();
 
-        for (KeyValue<String, String> kv : redisClusterUtil.getCommands().mget("relation:16200442", "farm:realtime:0865306056453850", "abc")) {
+        for (KeyValue<String, String> kv : redisClusterUtil.getCommands().mget("relation:16200442",
+                "farm:realtime:0865306056453850", "abc")) {
             if (kv.isEmpty()) {
                 log.debug("{}", kv.getKey());
             } else {
@@ -127,7 +129,8 @@ public class TestRedisUtil {
     @Test
     void testScan() {
         RedisClusterUtil redisClusterUtil = RedisClusterUtil.builder()
-                .uriStrList(Arrays.asList("redis://192.168.11.124:7001", "redis://192.168.11.124:7002", "redis://192.168.11.124:7003",
+                .uriStrList(Arrays.asList("redis://192.168.11.124:7001", "redis://192.168.11.124:7002",
+                        "redis://192.168.11.124:7003",
                         "redis://192.168.11.125:7004", "redis://192.168.11.125:7005", "redis://192.168.11.125:7006"))
                 .build();
 
@@ -145,10 +148,10 @@ public class TestRedisUtil {
                 .build();
 
         // GEOADD places {longitude} {latitude} "{address_name}"
-        redisStandaloneUtil.geoadd("pca", 116.37304, 39.92594, "北京市西城区什刹海街道西什库大街19号院");
+        redisStandaloneUtil.geoadd("testgeo", 116.37304, 39.92594, "北京市西城区什刹海街道西什库大街19号院");
 
         // GEORADIUS places {longitude} {latitude} {radius} m COUNT 1 ASC
-        String member = redisStandaloneUtil.getMemberBygeoradius("pca", 116.37304, 39.92594, 1);
+        String member = redisStandaloneUtil.getMemberBygeoradius("testgeo", 116.37304, 39.92594, 1);
         log.info(member);
 
         redisStandaloneUtil.close();

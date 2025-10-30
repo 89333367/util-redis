@@ -11,7 +11,8 @@ import io.lettuce.core.api.sync.RedisCommands;
  *
  * @author SunYu
  */
-public class RedisStandaloneUtil extends AbstractRedisOperations<RedisCommands<String, String>> implements AutoCloseable {
+public class RedisStandaloneUtil extends AbstractRedisOperations<RedisCommands<String, String>>
+        implements AutoCloseable {
     private final Log log = LogFactory.get();
     private final Config config;
 
@@ -68,12 +69,11 @@ public class RedisStandaloneUtil extends AbstractRedisOperations<RedisCommands<S
      */
     @Override
     public void close() {
-        log.info("[回收 {}] 开始", this.getClass().getSimpleName());
+        log.info("[销毁 {}] 开始", this.getClass().getSimpleName());
         config.connection.close();
         config.client.shutdown();
-        log.info("[回收 {}] 结束", this.getClass().getSimpleName());
+        log.info("[销毁 {}] 结束", this.getClass().getSimpleName());
     }
-
 
     /**
      * 获取同步命令对象
