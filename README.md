@@ -16,7 +16,7 @@
     <groupId>sunyu.util</groupId>
     <artifactId>util-redis</artifactId>
     <!-- {lettuce-core.version}_{util.version}_{jdk.version}_{architecture.version} -->
-    <version>7.0.0.RELEASE_1.0_jdk8_x64</version>
+    <version>7.1.0.RELEASE_1.0_jdk8_x64</version>
     <classifier>shaded</classifier>
 </dependency>
 ```
@@ -26,12 +26,12 @@
 ```java
 @Test
 void testGet() {
-    RedisStandaloneUtil redisStandaloneUtil = RedisStandaloneUtil.builder().uri("redis://192.168.11.39:16379/0").build();
-    String v = redisStandaloneUtil.getCommands().get("subsidy:bc:userinfo");
+    RedisUtil redisUtil = RedisUtil.builder().uri("redis://192.168.11.39:16379/0").build();
+    String v = redisUtil.getCommands().get("subsidy:bc:userinfo");
     log.info(v);
-    v = redisStandaloneUtil.get("subsidy:bc:userinfo");
+    v = redisUtil.get("subsidy:bc:userinfo");
     log.info(v);
-    redisStandaloneUtil.close();
+    redisUtil.close();
 
     /*RedisSentinelUtil redisSentinelUtil = RedisSentinelUtil.builder().uri("redis-sentinel://localhost:26379,localhost:26380/0#mymaster").build();
     v = redisSentinelUtil.getCommands().get("subsidy:bc:userinfo");
@@ -75,18 +75,18 @@ void testScan() {
 
 @Test
 void testGeoradius() {
-    RedisStandaloneUtil redisStandaloneUtil = RedisStandaloneUtil.builder()
+    RedisUtil redisUtil = RedisUtil.builder()
             .uri("redis://11KYms98qm@192.168.13.73:30794/2")
             .build();
 
     // GEOADD places {longitude} {latitude} "{address_name}"
-    redisStandaloneUtil.geoadd("pca", 116.37304, 39.92594, "北京市西城区什刹海街道西什库大街19号院");
+    redisUtil.geoadd("pca", 116.37304, 39.92594, "北京市西城区什刹海街道西什库大街19号院");
 
     // GEORADIUS places {longitude} {latitude} {radius} m COUNT 1 ASC
-    String member = redisStandaloneUtil.getMemberBygeoradius("pca", 116.37304, 39.92594, 10);
+    String member = redisUtil.getMemberBygeoradius("pca", 116.37304, 39.92594, 10);
     log.info(member);
 
-    redisStandaloneUtil.close();
+    redisUtil.close();
 }
 ```
 

@@ -17,7 +17,7 @@ import io.lettuce.core.cluster.RedisClusterClient;
 import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
 import io.lettuce.core.cluster.api.sync.RedisAdvancedClusterCommands;
 import sunyu.util.RedisClusterUtil;
-import sunyu.util.RedisStandaloneUtil;
+import sunyu.util.RedisUtil;
 
 public class TestRedisUtil {
     Log log = LogFactory.get();
@@ -92,7 +92,7 @@ public class TestRedisUtil {
 
     @Test
     void testGet() {
-        RedisStandaloneUtil redisStandaloneUtil = RedisStandaloneUtil.builder().uri("redis://192.168.11.39:16379/0")
+        RedisUtil redisStandaloneUtil = RedisUtil.builder().uri("redis://192.168.11.39:16379/0")
                 .build();
         String v = redisStandaloneUtil.getCommands().get("subsidy:bc:userinfo");
         log.info(v);
@@ -143,7 +143,7 @@ public class TestRedisUtil {
 
     @Test
     void testGeoradius() {
-        RedisStandaloneUtil redisStandaloneUtil = RedisStandaloneUtil.builder()
+        RedisUtil redisStandaloneUtil = RedisUtil.builder()
                 .uri("redis://11KYms98qm@192.168.13.73:30794/2")
                 .build();
 
@@ -153,6 +153,46 @@ public class TestRedisUtil {
         // GEORADIUS places {longitude} {latitude} {radius} m COUNT 1 ASC
         String member = redisStandaloneUtil.getMemberBygeoradius("testgeo", 116.37304, 39.92594, 1);
         log.info(member);
+
+        redisStandaloneUtil.close();
+    }
+
+    @Test
+    void testZset() {
+        RedisUtil redisStandaloneUtil = RedisUtil.builder()
+                .uri("redis://rPo4IdPmg9@172.16.1.180:31091/2")
+                .build();
+
+        RedisCommands<String, String> command = redisStandaloneUtil.getCommands();
+
+        // 将zset中所有数据分批取出来复制到另一个zset中，避免一次性取出大量数据导致内存问题
+        String sourceKey = "pca";
+        String targetKey = "pac:baidu";
+        int batchSize = 1000; // 每批处理1000条数据
+        long offset = 0;
+
+        while (true) {
+            // 分批获取数据
+            List<io.lettuce.core.ScoredValue<String>> batch = command.zrangeWithScores(sourceKey, offset,
+                    offset + batchSize - 1);
+
+            if (batch.isEmpty()) {
+                break; // 没有更多数据了
+            }
+
+            // 将这批数据添加到目标zset中
+            for (io.lettuce.core.ScoredValue<String> member : batch) {
+                log.debug("{} {}", member.getScore(), member.getValue());
+                //command.zadd(targetKey, member.getScore(), member.getValue());
+            }
+
+            // 如果这批数据不足batchSize，说明已经处理完了
+            if (batch.size() < batchSize) {
+                break;
+            }
+
+            offset += batchSize;
+        }
 
         redisStandaloneUtil.close();
     }

@@ -16,6 +16,10 @@ import io.lettuce.core.cluster.RedisClusterClient;
 import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
 import io.lettuce.core.cluster.api.sync.RedisAdvancedClusterCommands;
 
+/**
+ * Redis 集群工具类
+ * @author SunYu
+ */
 public class RedisClusterUtil extends AbstractRedisOperations<RedisAdvancedClusterCommands<String, String>>
         implements AutoCloseable {
     private final Log log = LogFactory.get();

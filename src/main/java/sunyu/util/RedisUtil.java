@@ -7,11 +7,11 @@ import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
 
 /**
- * Redis Standalone工具类
+ * Redis 单机、哨兵工具类
  *
  * @author SunYu
  */
-public class RedisStandaloneUtil extends AbstractRedisOperations<RedisCommands<String, String>>
+public class RedisUtil extends AbstractRedisOperations<RedisCommands<String, String>>
         implements AutoCloseable {
     private final Log log = LogFactory.get();
     private final Config config;
@@ -20,7 +20,7 @@ public class RedisStandaloneUtil extends AbstractRedisOperations<RedisCommands<S
         return new Builder();
     }
 
-    private RedisStandaloneUtil(Config config) {
+    private RedisUtil(Config config) {
         log.info("[构建 {}] 开始", this.getClass().getSimpleName());
         config.client = RedisClient.create(config.uri);
         config.connection = config.client.connect();
@@ -40,18 +40,19 @@ public class RedisStandaloneUtil extends AbstractRedisOperations<RedisCommands<S
     public static class Builder {
         private final Config config = new Config();
 
-        public RedisStandaloneUtil build() {
-            return new RedisStandaloneUtil(config);
+        public RedisUtil build() {
+            return new RedisUtil(config);
         }
 
         /**
-         * 链接
+         * 链接，支持单机和哨兵模式
          * <pre>
          * redis://localhost:16379/0
          * redis://[password@]host[:port][/databaseNumber]
          * redis://[username:password@]host[:port][/databaseNumber]
          * rediss://[[username:]password@]host[:port][/database][?[timeout=timeout[d|h|m|s|ms|us|ns]][&clientName=clientName][&libraryName=libraryName][&libraryVersion=libraryVersion]]
          * redis-socket://[[username:]password@]path[?[timeout=timeout[d|h|m|s|ms|us|ns]][&database=database][&clientName=clientName][&libraryName=libraryName][&libraryVersion=libraryVersion]]
+         * redis-sentinel://password@sentinel1:26379?sentinelMasterId=master
          * </pre>
          *
          * @param uri

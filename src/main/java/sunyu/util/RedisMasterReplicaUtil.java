@@ -10,7 +10,12 @@ import io.lettuce.core.codec.StringCodec;
 import io.lettuce.core.masterreplica.MasterReplica;
 import io.lettuce.core.masterreplica.StatefulRedisMasterReplicaConnection;
 
-public class RedisSentinelUtil extends AbstractRedisOperations<RedisCommands<String, String>> implements AutoCloseable {
+/**
+ * Redis 主从工具类
+ * @author SunYu
+ */
+public class RedisMasterReplicaUtil extends AbstractRedisOperations<RedisCommands<String, String>>
+        implements AutoCloseable {
     private final Log log = LogFactory.get();
     private final Config config;
 
@@ -18,11 +23,11 @@ public class RedisSentinelUtil extends AbstractRedisOperations<RedisCommands<Str
         return new Builder();
     }
 
-    private RedisSentinelUtil(Config config) {
+    private RedisMasterReplicaUtil(Config config) {
         log.info("[构建 {}] 开始", this.getClass().getSimpleName());
         config.client = RedisClient.create();
         config.connection = MasterReplica.connect(config.client, StringCodec.UTF8, RedisURI.create(config.uri));
-        config.connection.setReadFrom(ReadFrom.UPSTREAM_PREFERRED);//设置读取策略
+        config.connection.setReadFrom(ReadFrom.REPLICA);//设置读取策略,从从节点读取
         config.commands = config.connection.sync();
         log.info("[构建 {}] 结束", this.getClass().getSimpleName());
 
@@ -39,8 +44,8 @@ public class RedisSentinelUtil extends AbstractRedisOperations<RedisCommands<Str
     public static class Builder {
         private final Config config = new Config();
 
-        public RedisSentinelUtil build() {
-            return new RedisSentinelUtil(config);
+        public RedisMasterReplicaUtil build() {
+            return new RedisMasterReplicaUtil(config);
         }
 
         /**
