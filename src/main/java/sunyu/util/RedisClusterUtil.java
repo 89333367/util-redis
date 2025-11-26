@@ -1,5 +1,6 @@
 package sunyu.util;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -8,8 +9,12 @@ import java.util.stream.Collectors;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
+import cn.hutool.system.SystemUtil;
 import io.lettuce.core.ReadFrom;
 import io.lettuce.core.RedisURI;
+import io.lettuce.core.SocketOptions;
+import io.lettuce.core.SocketOptions.KeepAliveOptions;
+import io.lettuce.core.SocketOptions.TcpUserTimeoutOptions;
 import io.lettuce.core.cluster.ClusterClientOptions;
 import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
 import io.lettuce.core.cluster.RedisClusterClient;
@@ -29,24 +34,40 @@ public class RedisClusterUtil extends AbstractRedisOperations<RedisAdvancedClust
         return new Builder();
     }
 
-    @SuppressWarnings("deprecation")
     private RedisClusterUtil(Config config) {
         log.info("[构建 {}] 开始", this.getClass().getSimpleName());
         config.client = RedisClusterClient.create(config.uriList);
         log.info("构建集群拓扑参数开始");
         ClusterTopologyRefreshOptions clusterTopologyRefreshOptions = ClusterTopologyRefreshOptions.builder()
                 .enablePeriodicRefresh()//周期性更新集群拓扑视图
-                .enableAllAdaptiveRefreshTriggers()//设置自适应更新集群拓扑视图触发器
                 .build();
         log.info("构建集群拓扑参数完毕");
-        log.info("构建集群客户端参数开始");
-        ClusterClientOptions clusterClientOptions = ClusterClientOptions.builder()
-                .topologyRefreshOptions(clusterTopologyRefreshOptions)
-                .build();
-        log.info("构建集群客户端参数完毕");
-        log.info("设置集群客户端参数开始");
-        config.client.setOptions(clusterClientOptions);
-        log.info("设置集群客户端参数结束");
+        if (!SystemUtil.getOsInfo().isWindows()) {
+            log.info("构建KeepAlive参数开始");
+            SocketOptions socketOptions = SocketOptions.builder()
+                    .keepAlive(KeepAliveOptions.builder()
+                            .enable()
+                            .idle(Duration.ofSeconds(config.TCP_KEEPALIVE_IDLE))
+                            .interval(Duration.ofSeconds(config.TCP_KEEPALIVE_IDLE / 3))
+                            .count(3)
+                            .build())
+                    .tcpUserTimeout(TcpUserTimeoutOptions.builder()
+                            .enable()
+                            .tcpUserTimeout(Duration.ofSeconds(config.TCP_USER_TIMEOUT))
+                            .build())
+                    .build();
+            ClusterClientOptions clusterClientOptions = ClusterClientOptions.builder()
+                    .topologyRefreshOptions(clusterTopologyRefreshOptions)
+                    .socketOptions(socketOptions)
+                    .build();
+            log.info("构建KeepAlive参数完毕");
+            config.client.setOptions(clusterClientOptions);
+        } else {
+            ClusterClientOptions clusterClientOptions = ClusterClientOptions.builder()
+                    .topologyRefreshOptions(clusterTopologyRefreshOptions)
+                    .build();
+            config.client.setOptions(clusterClientOptions);
+        }
         config.connection = config.client.connect();
         log.info("设置读取策略开始");
         config.connection.setReadFrom(ReadFrom.REPLICA_PREFERRED);//设置为从副本中读取首选值，如果没有可用的副本，则回退到上游。
@@ -62,6 +83,19 @@ public class RedisClusterUtil extends AbstractRedisOperations<RedisAdvancedClust
         private RedisClusterClient client;
         private StatefulRedisClusterConnection<String, String> connection;
         private RedisAdvancedClusterCommands<String, String> commands;
+        /**
+        *  TCP_KEEPALIVE打开，并且配置三个参数分别为:
+        *  TCP_KEEPIDLE = 30
+        *  TCP_KEEPINTVL = 10
+        *  TCP_KEEPCNT = 3
+        */
+        private final int TCP_KEEPALIVE_IDLE = 30;
+
+        /**
+         * TCP_USER_TIMEOUT参数可以避免在故障宕机场景下，Lettuce持续超时的问题。
+         * refer: https://github.com/lettuce-io/lettuce-core/issues/2082
+         */
+        private final int TCP_USER_TIMEOUT = 30;
     }
 
     public static class Builder {
