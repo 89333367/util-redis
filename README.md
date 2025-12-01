@@ -83,7 +83,7 @@ void testGeoradius() {
     redisUtil.geoadd("pca", 116.37304, 39.92594, "北京市西城区什刹海街道西什库大街19号院");
 
     // GEORADIUS places {longitude} {latitude} {radius} m COUNT 1 ASC
-    String member = redisUtil.getMemberBygeoradius("pca", 116.37304, 39.92594, 10);
+    String member = redisUtil.georadiusWithCountOne("pca", 116.37304, 39.92594, 10);
     log.info(member);
 
     redisUtil.close();

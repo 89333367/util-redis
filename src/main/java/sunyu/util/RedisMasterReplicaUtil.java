@@ -12,6 +12,7 @@ import io.lettuce.core.masterreplica.StatefulRedisMasterReplicaConnection;
 
 /**
  * Redis 主从工具类
+ *
  * @author SunYu
  */
 public class RedisMasterReplicaUtil extends AbstractRedisOperations<RedisCommands<String, String>>

@@ -1,11 +1,5 @@
 package sunyu.util.test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import org.junit.jupiter.api.Test;
-
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import io.lettuce.core.KeyValue;
@@ -16,8 +10,13 @@ import io.lettuce.core.api.sync.RedisCommands;
 import io.lettuce.core.cluster.RedisClusterClient;
 import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
 import io.lettuce.core.cluster.api.sync.RedisAdvancedClusterCommands;
+import org.junit.jupiter.api.Test;
 import sunyu.util.RedisClusterUtil;
 import sunyu.util.RedisUtil;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class TestRedisUtil {
     Log log = LogFactory.get();
@@ -151,7 +150,7 @@ public class TestRedisUtil {
         redisStandaloneUtil.geoadd("testgeo", 116.37304, 39.92594, "北京市西城区什刹海街道西什库大街19号院");
 
         // GEORADIUS places {longitude} {latitude} {radius} m COUNT 1 ASC
-        String member = redisStandaloneUtil.getMemberBygeoradius("testgeo", 116.37304, 39.92594, 1);
+        String member = redisStandaloneUtil.georadiusWithCountOne("testgeo", 116.37304, 39.92594, 1);
         log.info(member);
 
         redisStandaloneUtil.close();

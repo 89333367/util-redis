@@ -1,7 +1,5 @@
 package sunyu.util;
 
-import java.util.List;
-
 import cn.hutool.core.collection.CollUtil;
 import io.lettuce.core.GeoArgs;
 import io.lettuce.core.GeoWithin;
@@ -10,6 +8,9 @@ import io.lettuce.core.ScanArgs;
 import io.lettuce.core.api.sync.RedisGeoCommands;
 import io.lettuce.core.api.sync.RedisKeyCommands;
 import io.lettuce.core.api.sync.RedisStringCommands;
+
+import java.util.List;
+import java.util.function.Consumer;
 
 public abstract class AbstractRedisOperations<T extends RedisStringCommands<String, String> & RedisKeyCommands<String, String> & RedisGeoCommands<String, String>> {
     public abstract T getCommands();
@@ -26,13 +27,13 @@ public abstract class AbstractRedisOperations<T extends RedisStringCommands<Stri
     }
 
     /**
-     * 扫描
+     * 扫描key
      *
      * @param match   可以使用*匹配
      * @param limit   限制每批读取多少条，建议500
      * @param handler 处理器
      */
-    public void scan(String match, int limit, java.util.function.Consumer<String> handler) {
+    public void scan(String match, int limit, Consumer<String> handler) {
         T commands = getCommands();
         KeyScanCursor<String> scanCursor = null;
         ScanArgs scanArgs = new ScanArgs().match(match).limit(limit);
@@ -45,7 +46,7 @@ public abstract class AbstractRedisOperations<T extends RedisStringCommands<Stri
     }
 
     /**
-     * 获取指定经纬度距离最近的成员
+     * 获取指定经纬度距离最近的一个成员
      *
      * @param key 键
      * @param lon 经度
@@ -54,7 +55,7 @@ public abstract class AbstractRedisOperations<T extends RedisStringCommands<Stri
      *
      * @return 成员
      */
-    public String getMemberBygeoradius(String key, double lon, double lat, double m) {
+    public String georadiusWithCountOne(String key, double lon, double lat, double m) {
         // GEORADIUS places {longitude} {latitude} {radius} m COUNT 1 ASC
         GeoArgs args = new GeoArgs()
                 .asc() // 按距离升序排列
