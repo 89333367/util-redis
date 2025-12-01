@@ -89,23 +89,8 @@
                                 </relocation>
                                 <!-- 重命名Project Reactor -->
                                 <relocation>
-                                    <pattern>reactor.core</pattern>
-                                    <shadedPattern>sunyu.util.relocations.redis.reactor.core</shadedPattern>
-                                </relocation>
-                                <!-- 重命名Reactor Netty -->
-                                <relocation>
-                                    <pattern>reactor.netty</pattern>
-                                    <shadedPattern>sunyu.util.relocations.redis.reactor.netty</shadedPattern>
-                                </relocation>
-                                <!-- 重命名Netty的native库 -->
-                                <relocation>
-                                    <pattern>META-INF/native/libnetty</pattern>
-                                    <shadedPattern>META-INF/native/sunyu_util_relocations_redis_libnetty</shadedPattern>
-                                </relocation>
-                                <!-- 重命名Netty的native镜像 -->
-                                <relocation>
-                                    <pattern>META-INF/native/netty</pattern>
-                                    <shadedPattern>META-INF/native/sunyu_util_relocations_redis_netty</shadedPattern>
+                                    <pattern>reactor</pattern>
+                                    <shadedPattern>sunyu.util.relocations.redis.reactor</shadedPattern>
                                 </relocation>
                             </relocations>
                             <transformers>
@@ -120,7 +105,7 @@
                                         implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                                     <resource>META-INF/services/io.lettuce.core.codec.RedisCodec</resource>
                                 </transformer>
-                                <!-- 处理Netty的native库 -->
+                                <!-- 设置多版本JAR支持，兼容Java 9+的多版本特性 -->
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
