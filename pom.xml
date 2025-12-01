@@ -75,37 +75,37 @@
                                 <!-- 重命名Hutool包 -->
                                 <relocation>
                                     <pattern>cn.hutool</pattern>
-                                    <shadedPattern>sunyu.util.shaded.cn.hutool</shadedPattern>
+                                    <shadedPattern>sunyu.util.relocations.redis.cn.hutool</shadedPattern>
                                 </relocation>
                                 <!-- 重命名Lettuce包 -->
                                 <relocation>
                                     <pattern>io.lettuce</pattern>
-                                    <shadedPattern>sunyu.util.shaded.io.lettuce</shadedPattern>
+                                    <shadedPattern>sunyu.util.relocations.redis.io.lettuce</shadedPattern>
                                 </relocation>
                                 <!-- 重命名Netty包 -->
                                 <relocation>
                                     <pattern>io.netty</pattern>
-                                    <shadedPattern>sunyu.util.shaded.io.netty</shadedPattern>
+                                    <shadedPattern>sunyu.util.relocations.redis.io.netty</shadedPattern>
                                 </relocation>
                                 <!-- 重命名Project Reactor -->
                                 <relocation>
                                     <pattern>reactor.core</pattern>
-                                    <shadedPattern>sunyu.util.shaded.reactor.core</shadedPattern>
+                                    <shadedPattern>sunyu.util.relocations.redis.reactor.core</shadedPattern>
                                 </relocation>
                                 <!-- 重命名Reactor Netty -->
                                 <relocation>
                                     <pattern>reactor.netty</pattern>
-                                    <shadedPattern>sunyu.util.shaded.reactor.netty</shadedPattern>
+                                    <shadedPattern>sunyu.util.relocations.redis.reactor.netty</shadedPattern>
                                 </relocation>
                                 <!-- 重命名Netty的native库 -->
                                 <relocation>
                                     <pattern>META-INF/native/libnetty</pattern>
-                                    <shadedPattern>META-INF/native/sunyu_util_shaded_libnetty</shadedPattern>
+                                    <shadedPattern>META-INF/native/sunyu_util_relocations_redis_libnetty</shadedPattern>
                                 </relocation>
                                 <!-- 重命名Netty的native镜像 -->
                                 <relocation>
                                     <pattern>META-INF/native/netty</pattern>
-                                    <shadedPattern>META-INF/native/sunyu_util_shaded_netty</shadedPattern>
+                                    <shadedPattern>META-INF/native/sunyu_util_relocations_redis_netty</shadedPattern>
                                 </relocation>
                             </relocations>
                             <transformers>
