@@ -2,9 +2,14 @@ package sunyu.util;
 
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
+import io.lettuce.core.ClientOptions;
 import io.lettuce.core.RedisClient;
+import io.lettuce.core.SocketOptions;
+import io.lettuce.core.TimeoutOptions;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
+
+import java.time.Duration;
 
 /**
  * Redis 单机、哨兵工具类
@@ -22,8 +27,30 @@ public class RedisUtil extends AbstractRedisOperations<RedisCommands<String, Str
 
     private RedisUtil(Config config) {
         log.info("[构建 {}] 开始", this.getClass().getSimpleName());
+
+        // 1. 创建客户端
         config.client = RedisClient.create(config.uri);
+
+        // 2. 构建客户端选项（关键：超时和保活）
+        ClientOptions clientOptions = ClientOptions.builder()
+                // 命令超时：防止慢查询阻塞线程（建议30秒）
+                .timeoutOptions(TimeoutOptions.enabled(Duration.ofSeconds(30)))
+                // Socket 超时和保活
+                .socketOptions(SocketOptions.builder()
+                        .connectTimeout(Duration.ofSeconds(5))  // 连接超时5秒
+                        .keepAlive(true)                        // 启用TCP KeepAlive
+                        .tcpNoDelay(true)
+                        .build())
+                // 断开连接时拒绝命令（快速失败）
+                .disconnectedBehavior(ClientOptions.DisconnectedBehavior.REJECT_COMMANDS)
+                .build();
+
+        config.client.setOptions(clientOptions);
+
+        // 3. 建立连接
         config.connection = config.client.connect();
+
+        // 4. 创建命令接口
         config.commands = config.connection.sync();
         log.info("[构建 {}] 结束", this.getClass().getSimpleName());
 
@@ -56,7 +83,6 @@ public class RedisUtil extends AbstractRedisOperations<RedisCommands<String, Str
          * </pre>
          *
          * @param uri
-         *
          * @return
          */
         public Builder uri(String uri) {
