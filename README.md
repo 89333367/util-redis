@@ -16,7 +16,7 @@
     <groupId>sunyu.util</groupId>
     <artifactId>util-redis</artifactId>
     <!-- {lettuce-core.version}_{util.version}_{jdk.version}_{architecture.version} -->
-    <version>7.1.0.RELEASE_1.0_jdk8_x64</version>
+    <version>7.2.1.RELEASE_1.0_jdk8_x64</version>
     <classifier>shaded</classifier>
 </dependency>
 ```
