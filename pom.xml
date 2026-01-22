@@ -127,6 +127,10 @@
                                         <exclude>META-INF/*.SF</exclude>
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF/native-image/**</exclude>
+                                        <exclude>META-INF/spring/**</exclude>
+                                        <exclude>META-INF/*.properties</exclude>
+                                        <exclude>META-INF/spring.factories</exclude>
                                     </excludes>
                                 </filter>
                             </filters>

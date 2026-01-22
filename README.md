@@ -21,6 +21,12 @@
     <!-- 7.2.1支持redis3.2以上的版本 -->
     <!--<version>7.2.1.RELEASE_1.0_jdk8_x64</version>-->
     <classifier>shaded</classifier>
+    <exclusions>
+        <exclusion>
+            <groupId>io.lettuce</groupId>
+            <artifactId>lettuce-core</artifactId>
+        </exclusion>
+    </exclusions>
 </dependency>
 ```
 
