@@ -16,7 +16,9 @@
     <groupId>sunyu.util</groupId>
     <artifactId>util-redis</artifactId>
     <!-- {lettuce-core.version}_{util.version}_{jdk.version}_{architecture.version} -->
+    <!-- 6.2.7最低支持到redis3.2 -->
     <version>6.2.7.RELEASE_1.0_jdk8_x64</version>
+    <!-- 7.2.1支持redis3.2以上的版本 -->
     <!--<version>7.2.1.RELEASE_1.0_jdk8_x64</version>-->
     <classifier>shaded</classifier>
 </dependency>
