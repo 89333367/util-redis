@@ -7,7 +7,7 @@
     <groupId>sunyu.util</groupId>
     <artifactId>util-redis</artifactId>
     <!-- {lettuce-core.version}_{util.version}_{jdk.version}_{architecture.version} -->
-    <version>7.1.0.RELEASE_1.0_jdk8_x64</version>
+    <version>7.2.1.RELEASE_1.0_jdk8_x64</version>
 
     <properties>
         <java.version>1.8</java.version>
@@ -35,13 +35,13 @@
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-all</artifactId>
-            <version>5.8.42</version>
+            <version>5.8.43</version>
         </dependency>
         <!-- https://central.sonatype.com/artifact/io.lettuce/lettuce-core/versions -->
         <dependency>
             <groupId>io.lettuce</groupId>
             <artifactId>lettuce-core</artifactId>
-            <version>7.1.0.RELEASE</version>
+            <version>7.2.1.RELEASE</version>
         </dependency>
 
         <!-- https://central.sonatype.com/artifact/org.junit.jupiter/junit-jupiter/versions -->
@@ -49,7 +49,7 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <!-- 不能升级到6.x，升级到6.x需要jdk11 -->
-            <version>5.14.1</version>
+            <version>5.14.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
