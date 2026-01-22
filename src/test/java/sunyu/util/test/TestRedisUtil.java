@@ -1,5 +1,6 @@
 package sunyu.util.test;
 
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import io.lettuce.core.KeyValue;
@@ -120,6 +121,21 @@ public class TestRedisUtil {
             } else {
                 log.debug("{} {}", kv.getKey(), kv.getValue());
             }
+        }
+
+        redisClusterUtil.close();
+    }
+
+    @Test
+    void testGet2() {
+        RedisClusterUtil redisClusterUtil = RedisClusterUtil.builder()
+                .nodes("192.168.11.124:7001,192.168.11.124:7002,192.168.11.124:7003,192.168.11.125:7004,192.168.11.125:7005,192.168.11.125:7006")
+                .build();
+
+        for (int i = 0; i < 20; i++) {
+            String v = redisClusterUtil.get("relation:16200442");
+            log.info(v);
+            ThreadUtil.sleep(1000 * 10);
         }
 
         redisClusterUtil.close();
