@@ -3,6 +3,7 @@ package sunyu.util.test;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
+import cn.hutool.setting.dialect.Props;
 import io.lettuce.core.KeyValue;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
@@ -14,6 +15,7 @@ import io.lettuce.core.cluster.api.sync.RedisAdvancedClusterCommands;
 import org.junit.jupiter.api.Test;
 import sunyu.util.RedisClusterUtil;
 import sunyu.util.RedisUtil;
+import sunyu.util.test.config.ConfigProperties;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,6 +23,8 @@ import java.util.List;
 
 public class TestRedisUtil {
     Log log = LogFactory.get();
+
+    private static final Props props = ConfigProperties.getProps();
 
     /**
      * 单节点模式
