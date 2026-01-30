@@ -36,32 +36,26 @@ public class RedisClusterUtil extends AbstractRedisOperations<RedisAdvancedClust
 
         log.info("构建集群拓扑刷新策略");
         ClusterTopologyRefreshOptions topologyRefreshOptions = ClusterTopologyRefreshOptions.builder()
-                // 1. 周期性刷新（延长到10秒，减少3.2集群压力）
+                // 周期性刷新（延长到10秒，减少集群压力）
                 .enablePeriodicRefresh(Duration.ofSeconds(10))
-
-                // 2. 显式启用自适应刷新（6.2.7 需要手动开启）
-                //    注意：3.2 的 MOVED/ASK 支持有限，效果不如新版
-                .enableAllAdaptiveRefreshTriggers()  // 6.2.7 可用！
-
-                // 3. 限制刷新频率
+                // 显式启用自适应刷新
+                .enableAllAdaptiveRefreshTriggers()
+                // 限制刷新频率
                 .adaptiveRefreshTriggersTimeout(Duration.ofSeconds(30))  // 延长至30秒
                 .build();
 
         log.info("构建集群客户端选项");
         ClusterClientOptions clusterClientOptions = ClusterClientOptions.builder()
                 .topologyRefreshOptions(topologyRefreshOptions)
-
-                // 4. 命令超时（保持不变）
+                // 命令超时（保持不变）
                 .timeoutOptions(TimeoutOptions.enabled(Duration.ofSeconds(30)))
-
-                // 5. Socket 配置（保持不变）
+                // Socket 配置（保持不变）
                 .socketOptions(SocketOptions.builder()
                         .connectTimeout(Duration.ofSeconds(5))
                         .keepAlive(true)
                         .tcpNoDelay(true)
                         .build())
-
-                // 6. 断开行为（保持不变）
+                // 断开行为（保持不变）
                 .disconnectedBehavior(ClientOptions.DisconnectedBehavior.REJECT_COMMANDS)
                 .build();
 

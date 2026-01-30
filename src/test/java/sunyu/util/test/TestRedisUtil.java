@@ -120,7 +120,7 @@ public class TestRedisUtil {
 
         for (KeyValue<String, String> kv : redisClusterUtil.getCommands().mget("relation:16200442",
                 "farm:realtime:0865306056453850", "abc")) {
-            if (kv.isEmpty()) {
+            if (kv == null) {
                 log.debug("{}", kv.getKey());
             } else {
                 log.debug("{} {}", kv.getKey(), kv.getValue());
