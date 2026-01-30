@@ -5,21 +5,31 @@ import io.lettuce.core.GeoArgs;
 import io.lettuce.core.GeoWithin;
 import io.lettuce.core.KeyScanCursor;
 import io.lettuce.core.ScanArgs;
-import io.lettuce.core.api.sync.RedisGeoCommands;
-import io.lettuce.core.api.sync.RedisKeyCommands;
-import io.lettuce.core.api.sync.RedisStringCommands;
+import io.lettuce.core.api.sync.*;
 
 import java.util.List;
 import java.util.function.Consumer;
 
-public abstract class AbstractRedisOperations<T extends RedisStringCommands<String, String> & RedisKeyCommands<String, String> & RedisGeoCommands<String, String>> {
+public abstract class AbstractRedisOperations<
+        T extends
+                RedisGeoCommands<String, String>
+                & RedisHashCommands<String, String>
+                & RedisHLLCommands<String, String>
+                & RedisKeyCommands<String, String>
+                & RedisListCommands<String, String>
+                & RedisScriptingCommands<String, String>
+                & RedisServerCommands<String, String>
+                & RedisSetCommands<String, String>
+                & RedisSortedSetCommands<String, String>
+                & RedisStreamCommands<String, String>
+                & RedisStringCommands<String, String>
+        > {
     public abstract T getCommands();
 
     /**
      * 获取值
      *
      * @param key 键
-     *
      * @return 值
      */
     public String get(String key) {
@@ -52,7 +62,6 @@ public abstract class AbstractRedisOperations<T extends RedisStringCommands<Stri
      * @param lon 经度
      * @param lat 纬度
      * @param m   距离(米)
-     *
      * @return 成员
      */
     public String georadiusWithCountOne(String key, double lon, double lat, double m) {

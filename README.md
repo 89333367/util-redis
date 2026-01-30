@@ -2,7 +2,7 @@
 
 ## 描述
 
-完全使用lettuce来操作redis，封装的目的是改变了包名称，避免冲突
+封装了lettuce的redis操作，更改了lettuce里面netty的包名，避免与项目中的netty组件冲突
 
 ## 环境
 
@@ -11,7 +11,6 @@
 ## 依赖
 
 ```xml
-
 <dependency>
     <groupId>sunyu.util</groupId>
     <artifactId>util-redis</artifactId>
