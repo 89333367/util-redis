@@ -15,78 +15,51 @@
     <groupId>sunyu.util</groupId>
     <artifactId>util-redis</artifactId>
     <!-- {lettuce-core.version}_{util.version}_{jdk.version}_{architecture.version} -->
-    <!-- 5.3.7是最后一个支持jdk8的版本 -->
-    <version>5.3.7.RELEASE_1.0_jdk8_x64</version>
+    <!-- 6.0.9.RELEASE是最后一个支持jdk8的版本 -->
+    <version>6.0.9.RELEASE_1.0_jdk8_x64</version>
     <classifier>shaded</classifier>
 </dependency>
 ```
 
 ## 例子
 
+```
+redis :// [[username :] password@] host [:port][/database]
+          [?[timeout=timeout[d|h|m|s|ms|us|ns]] [&clientName=clientName]
+          [&libraryName=libraryName] [&libraryVersion=libraryVersion] ]
+          
+redis-sentinel :// [[username :] password@] host1[:port1] [, host2[:port2]] [, hostN[:portN]] [/database]
+                   [?[timeout=timeout[d|h|m|s|ms|us|ns]] [&sentinelMasterId=sentinelMasterId]
+                   [&clientName=clientName] [&libraryName=libraryName]
+                   [&libraryVersion=libraryVersion] ]
+
+redis.standalone.uri=redis://rPo4IdPmg9@172.16.1.180:31091/2
+
+redis.cluster.uri=redis://172.16.1.29:7001,redis://172.16.1.10:7002,redis://172.16.1.26:7003,redis://172.16.1.25:7004,redis://172.16.1.11:7005,redis://172.16.1.19:7006
+redis.cluster.uri=172.16.1.29:7001,172.16.1.10:7002,172.16.1.26:7003,172.16.1.25:7004,172.16.1.11:7005,172.16.1.19:7006
+```
+
 ```java
 @Test
-void testGet() {
-    RedisUtil redisUtil = RedisUtil.builder().uri("redis://192.168.11.39:16379/0").build();
-    String v = redisUtil.getCommands().get("subsidy:bc:userinfo");
-    log.info(v);
-    v = redisUtil.get("subsidy:bc:userinfo");
-    log.info(v);
-    redisUtil.close();
+void testCluster() {
+    RedisClusterUtil clusterUtil = new RedisClusterUtil.Builder()
+            .uri(props.getStr("redis.cluster.uri"))
+            .build();
+    String v = clusterUtil.get("p:r:d:600243");
+    log.info("{}", v);
 
-    /*RedisSentinelUtil redisSentinelUtil = RedisSentinelUtil.builder().uri("redis-sentinel://localhost:26379,localhost:26380/0#mymaster").build();
-    v = redisSentinelUtil.getCommands().get("subsidy:bc:userinfo");
-    log.info(v);
-    v = redisSentinelUtil.get("subsidy:bc:userinfo");
-    log.info(v);
-    redisSentinelUtil.close();*/
+    clusterUtil.close();
 }
 
 @Test
-void testMget() {
-    RedisClusterUtil redisClusterUtil = RedisClusterUtil.builder()
-            .nodes("192.168.11.124:7001,192.168.11.124:7002,192.168.11.124:7003,192.168.11.125:7004,192.168.11.125:7005,192.168.11.125:7006")
+void testStandalone() {
+    RedisUtil standaloneUtil = new RedisUtil.Builder()
+            .uri(props.getStr("redis.standalone.uri"))
             .build();
+    String v = standaloneUtil.georadiusWithCountOne("pca:tianditu", 86.018138, 28.283572, 1000);
+    log.info("{}", v);
 
-    for (KeyValue<String, String> kv : redisClusterUtil.getCommands().mget("relation:16200442", "farm:realtime:0865306056453850", "abc")) {
-        if (kv.isEmpty()) {
-            log.debug("{}", kv.getKey());
-        } else {
-            log.debug("{} {}", kv.getKey(), kv.getValue());
-        }
-    }
-
-    redisClusterUtil.close();
-}
-
-@Test
-void testScan() {
-    RedisClusterUtil redisClusterUtil = RedisClusterUtil.builder()
-            .uriStrList(Arrays.asList("redis://192.168.11.124:7001", "redis://192.168.11.124:7002", "redis://192.168.11.124:7003",
-                    "redis://192.168.11.125:7004", "redis://192.168.11.125:7005", "redis://192.168.11.125:7006"))
-            .build();
-
-    redisClusterUtil.scan("ne:realtime:*", 500, key -> {
-        log.info("{}", key);
-    });
-
-    redisClusterUtil.close();
-}
-
-
-@Test
-void testGeoradius() {
-    RedisUtil redisUtil = RedisUtil.builder()
-            .uri("redis://11KYms98qm@192.168.13.73:30794/2")
-            .build();
-
-    // GEOADD places {longitude} {latitude} "{address_name}"
-    redisUtil.geoadd("pca", 116.37304, 39.92594, "北京市西城区什刹海街道西什库大街19号院");
-
-    // GEORADIUS places {longitude} {latitude} {radius} m COUNT 1 ASC
-    String member = redisUtil.georadiusWithCountOne("pca", 116.37304, 39.92594, 10);
-    log.info(member);
-
-    redisUtil.close();
+    standaloneUtil.close();
 }
 ```
 

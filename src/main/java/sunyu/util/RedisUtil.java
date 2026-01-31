@@ -2,21 +2,22 @@ package sunyu.util;
 
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
-import io.lettuce.core.ClientOptions;
-import io.lettuce.core.RedisClient;
-import io.lettuce.core.SocketOptions;
-import io.lettuce.core.TimeoutOptions;
-import io.lettuce.core.api.StatefulRedisConnection;
+import io.lettuce.core.*;
 import io.lettuce.core.api.sync.RedisCommands;
+import io.lettuce.core.codec.StringCodec;
+import io.lettuce.core.masterreplica.MasterReplica;
+import io.lettuce.core.masterreplica.StatefulRedisMasterReplicaConnection;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Redis 单机、哨兵工具类
+ * Redis 单机、主从、哨兵工具类
  *
  * @author SunYu
  */
-public class RedisUtil extends AbstractRedisOperations<RedisCommands<String, String>>
+public class RedisUtil extends AbstractRedisOperations<String, String, RedisCommands<String, String>>
         implements AutoCloseable {
     private final Log log = LogFactory.get();
     private final Config config;
@@ -29,29 +30,46 @@ public class RedisUtil extends AbstractRedisOperations<RedisCommands<String, Str
         log.info("[构建 {}] 开始", this.getClass().getSimpleName());
 
         // 1. 创建客户端
-        config.client = RedisClient.create(config.uri);
+        config.client = RedisClient.create();
 
-        // 2. 构建客户端选项（关键：超时和保活）
+        // 2. 配置客户端选项
         ClientOptions clientOptions = ClientOptions.builder()
-                // 命令超时：防止慢查询阻塞线程（建议30秒）
-                .timeoutOptions(TimeoutOptions.enabled(Duration.ofSeconds(30)))
-                // Socket 超时和保活
+                .timeoutOptions(TimeoutOptions.enabled(Duration.ofSeconds(30)))  // 命令超时30秒
                 .socketOptions(SocketOptions.builder()
-                        .connectTimeout(Duration.ofSeconds(5))  // 连接超时5秒
+                        .connectTimeout(Duration.ofSeconds(5))   // 连接超时5秒
                         .keepAlive(true)                        // 启用TCP KeepAlive
                         .tcpNoDelay(true)
                         .build())
-                // 断开连接时拒绝命令（快速失败）
                 .disconnectedBehavior(ClientOptions.DisconnectedBehavior.REJECT_COMMANDS)
                 .build();
-
         config.client.setOptions(clientOptions);
 
-        // 3. 建立连接
-        config.connection = config.client.connect();
+        // 3. 提供所有节点地址
+        List<RedisURI> redisUris = new ArrayList<>();
 
-        // 4. 创建命令接口
+        if (config.uri.startsWith("redis-sentinel://")) {
+            redisUris.add(RedisURI.create(config.uri));
+        } else {
+            for (String s : config.uri.split(",")) {
+                redisUris.add(RedisURI.create(s));
+            }
+        }
+
+        // 4. 建立连接
+        log.info("建立连接");
+        config.connection = MasterReplica.connect(
+                config.client,
+                StringCodec.UTF8,
+                redisUris
+        );
+
+        // 5. 设置读取策略
+        log.info("设置读取策略: {}", ReadFrom.REPLICA_PREFERRED);
+        config.connection.setReadFrom(ReadFrom.REPLICA_PREFERRED);
+
+        // 6. 创建命令接口
         config.commands = config.connection.sync();
+
         log.info("[构建 {}] 结束", this.getClass().getSimpleName());
 
         this.config = config;
@@ -60,7 +78,7 @@ public class RedisUtil extends AbstractRedisOperations<RedisCommands<String, Str
     private static class Config {
         private RedisClient client;
         private String uri;
-        private StatefulRedisConnection<String, String> connection;
+        private StatefulRedisMasterReplicaConnection<String, String> connection;
         private RedisCommands<String, String> commands;
     }
 
@@ -72,14 +90,32 @@ public class RedisUtil extends AbstractRedisOperations<RedisCommands<String, Str
         }
 
         /**
-         * 链接，支持单机和哨兵模式
+         * 设置链接
+         *
          * <pre>
-         * redis://localhost:16379/0
-         * redis://[password@]host[:port][/databaseNumber]
-         * redis://[username:password@]host[:port][/databaseNumber]
-         * rediss://[[username:]password@]host[:port][/database][?[timeout=timeout[d|h|m|s|ms|us|ns]][&clientName=clientName][&libraryName=libraryName][&libraryVersion=libraryVersion]]
-         * redis-socket://[[username:]password@]path[?[timeout=timeout[d|h|m|s|ms|us|ns]][&database=database][&clientName=clientName][&libraryName=libraryName][&libraryVersion=libraryVersion]]
-         * redis-sentinel://password@sentinel1:26379?sentinelMasterId=master
+         *     redis :// [[username :] password@] host [:port][/database]
+         *           [?[timeout=timeout[d|h|m|s|ms|us|ns]] [&clientName=clientName]
+         *           [&libraryName=libraryName] [&libraryVersion=libraryVersion] ]
+         * </pre>
+         *
+         * <pre>
+         *     rediss :// [[username :] password@] host [: port][/database]
+         *            [?[timeout=timeout[d|h|m|s|ms|us|ns]] [&clientName=clientName]
+         *            [&libraryName=libraryName] [&libraryVersion=libraryVersion] ]
+         * </pre>
+         *
+         * <pre>
+         *     redis-socket :// [[username :] password@]path
+         *                  [?[timeout=timeout[d|h|m|s|ms|us|ns]] [&database=database]
+         *                  [&clientName=clientName] [&libraryName=libraryName]
+         *                  [&libraryVersion=libraryVersion] ]
+         * </pre>
+         *
+         * <pre>
+         *     redis-sentinel :// [[username :] password@] host1[:port1] [, host2[:port2]] [, hostN[:portN]] [/database]
+         *                    [?[timeout=timeout[d|h|m|s|ms|us|ns]] [&sentinelMasterId=sentinelMasterId]
+         *                    [&clientName=clientName] [&libraryName=libraryName]
+         *                    [&libraryVersion=libraryVersion] ]
          * </pre>
          *
          * @param uri

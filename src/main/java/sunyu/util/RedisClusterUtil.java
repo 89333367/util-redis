@@ -1,6 +1,5 @@
 package sunyu.util;
 
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import io.lettuce.core.*;
@@ -12,16 +11,15 @@ import io.lettuce.core.cluster.api.sync.RedisAdvancedClusterCommands;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Redis 集群工具类
  *
  * @author SunYu
  */
-public class RedisClusterUtil extends AbstractRedisOperations<RedisAdvancedClusterCommands<String, String>>
+public class RedisClusterUtil
+        extends AbstractRedisOperations<String, String, RedisAdvancedClusterCommands<String, String>>
         implements AutoCloseable {
     private final Log log = LogFactory.get();
     private final Config config;
@@ -32,7 +30,13 @@ public class RedisClusterUtil extends AbstractRedisOperations<RedisAdvancedClust
 
     private RedisClusterUtil(Config config) {
         log.info("[构建 {}] 开始", this.getClass().getSimpleName());
-        config.client = RedisClusterClient.create(config.uriList);
+        // 分割逗号分隔的 URI 字符串，转换为 RedisURI 列表
+        List<RedisURI> redisURIs = new ArrayList<>();
+        for (String uri : config.uri.split(",")) {
+            redisURIs.add(RedisURI.create(uri.trim()));
+        }
+        log.info("Redis 集群节点: {}", redisURIs);
+        config.client = RedisClusterClient.create(redisURIs);
 
         log.info("构建集群拓扑刷新策略");
         ClusterTopologyRefreshOptions topologyRefreshOptions = ClusterTopologyRefreshOptions.builder()
@@ -41,7 +45,7 @@ public class RedisClusterUtil extends AbstractRedisOperations<RedisAdvancedClust
                 // 显式启用自适应刷新
                 .enableAllAdaptiveRefreshTriggers()
                 // 限制刷新频率
-                .adaptiveRefreshTriggersTimeout(Duration.ofSeconds(30))  // 延长至30秒
+                .adaptiveRefreshTriggersTimeout(Duration.ofSeconds(30)) // 延长至30秒
                 .build();
 
         log.info("构建集群客户端选项");
@@ -74,7 +78,7 @@ public class RedisClusterUtil extends AbstractRedisOperations<RedisAdvancedClust
     }
 
     private static class Config {
-        private List<RedisURI> uriList;
+        private String uri;
         private RedisClusterClient client;
         private StatefulRedisClusterConnection<String, String> connection;
         private RedisAdvancedClusterCommands<String, String> commands;
@@ -88,45 +92,55 @@ public class RedisClusterUtil extends AbstractRedisOperations<RedisAdvancedClust
         }
 
         /**
-         * 设置连接
+         * 设置链接
          *
-         * @param nodes 192.168.11.124:7001,192.168.11.124:7002,192.168.11.124:7003,192.168.11.125:7004,192.168.11.125:7005,192.168.11.125:7006
-         * @return
-         */
-        public Builder nodes(String nodes) {
-            List<String> l = Arrays.stream(nodes.split(","))
-                    .map(s -> s.split(":"))
-                    .map(arr -> StrUtil.format("redis://{}:{}", arr[0], arr[1]))
-                    .collect(Collectors.toList());
-            return uriStrList(l);
-        }
-
-        /**
-         * 设置连接
          * <pre>
-         * redis://[password@]host[:port]
-         * redis://[username:password@]host[:port]
+         *     redis :// [[username :] password@] host [:port][/database]
+         *           [?[timeout=timeout[d|h|m|s|ms|us|ns]] [&clientName=clientName]
+         *           [&libraryName=libraryName] [&libraryVersion=libraryVersion] ]
          * </pre>
          *
-         * @param uriStrList
-         * @return
+         * <pre>
+         *     rediss :// [[username :] password@] host [: port][/database]
+         *            [?[timeout=timeout[d|h|m|s|ms|us|ns]] [&clientName=clientName]
+         *            [&libraryName=libraryName] [&libraryVersion=libraryVersion] ]
+         * </pre>
+         *
+         * <pre>
+         *     redis-socket :// [[username :] password@]path
+         *                  [?[timeout=timeout[d|h|m|s|ms|us|ns]] [&database=database]
+         *                  [&clientName=clientName] [&libraryName=libraryName]
+         *                  [&libraryVersion=libraryVersion] ]
+         * </pre>
+         *
+         * <pre>
+         *      redis://192.168.11.124:7001,redis://192.168.11.124:7002,redis://192.168.11.124:7003,redis://192.168.11.125:7004,redis://192.168.11.125:7005,redis://192.168.11.125:7006
+         * </pre>
+         *
+         * @param uri 链接
+         * @return 构建器
          */
-        public Builder uriStrList(List<String> uriStrList) {
-            List<RedisURI> l = new ArrayList<>();
-            for (String uri : uriStrList) {
-                l.add(RedisURI.create(uri));
-            }
-            return uriList(l);
+        public Builder uri(String uri) {
+            config.uri = uri;
+            return this;
         }
 
         /**
-         * 设置连接
+         * 设置节点
          *
-         * @param uriList
-         * @return
+         * <pre>
+         *      192.168.11.124:7001,192.168.11.124:7002,192.168.11.124:7003,192.168.11.125:7004,192.168.11.125:7005,192.168.11.125:7006
+         * </pre>
+         *
+         * @param nodes 节点
+         * @return 构建器
          */
-        public Builder uriList(List<RedisURI> uriList) {
-            config.uriList = uriList;
+        public Builder nodes(String nodes) {
+            StringBuilder uriBuilder = new StringBuilder();
+            for (String node : nodes.split(",")) {
+                uriBuilder.append("redis://").append(node.trim()).append(",");
+            }
+            config.uri = uriBuilder.substring(0, uriBuilder.length() - 1);
             return this;
         }
     }
