@@ -1,13 +1,12 @@
 package sunyu.util;
 
 import cn.hutool.core.collection.CollUtil;
-import io.lettuce.core.GeoArgs;
-import io.lettuce.core.GeoWithin;
-import io.lettuce.core.KeyScanCursor;
-import io.lettuce.core.ScanArgs;
+import io.lettuce.core.*;
 import io.lettuce.core.api.sync.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -131,6 +130,32 @@ public abstract class AbstractRedisOperations<K, V, T extends
         // GEOADD places {longitude} {latitude} "{address_name}"
         T commands = getCommands();
         commands.geoadd(key, lon, lat, member);
+    }
+
+    /**
+     * 获取多个键对应的值
+     * <p>
+     * 该方法批量获取多个键对应的值，返回一个映射，键为输入的键，值为对应的值。
+     * 如果键不存在或对应的值为 null，则映射中对应的值为 null。
+     * </p>
+     * <p>
+     * 该方法利用 Redis 的 MGET 命令批量获取多个键对应的值，避免了多次单独调用 GET 命令的性能开销。
+     * </p>
+     *
+     * @param keys 键
+     * @return 键值对
+     */
+    public Map<K, V> mget(K... keys) {
+        T commands = getCommands();
+        Map<K, V> results = new HashMap<>();
+        for (KeyValue<K, V> kv : commands.mget(keys)) {
+            if (kv != null && kv.hasValue() && kv.getValue() != null) {
+                results.put(kv.getKey(), kv.getValue());
+            } else {
+                results.put(kv.getKey(), null);
+            }
+        }
+        return results;
     }
 
 }
