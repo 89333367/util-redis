@@ -11,6 +11,7 @@ import sunyu.util.test.config.ConfigProperties;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class TestRedisUtil {
     Log log = LogFactory.get();
@@ -92,5 +93,23 @@ public class TestRedisUtil {
         log.info("{}", v);
 
         standaloneUtil.close();
+    }
+
+    @Test
+    void testSet() {
+        RedisClusterUtil clusterUtil = new RedisClusterUtil.Builder()
+                .nodes(props.getStr("redis.cluster.nodes"))
+                .build();
+
+        //clusterUtil.getCommands().sadd("farm:split:white:dids", "a", "b");
+
+        Set<String> dids = clusterUtil.getCommands().smembers("farm:split:white:dids");
+        log.info("{}", dids);
+
+        for (String value : clusterUtil.getCommands().sscan("farm:split:white:dids").getValues()) {
+            log.info("{}", value);
+        }
+
+        clusterUtil.close();
     }
 }
